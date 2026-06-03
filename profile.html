@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Profile — LexAid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        :root {
+            --ink:#0A0906;--ink2:#111009;--ink3:#1A1814;--ink4:#272420;
+            --p:#F5F0E8;--g:#B8965A;--gl:#D4AF6E;--gd:#7A6038;
+            --mu:#6B6355;--di:#3A3528;--ok:#5C9E72;--warn:#C4873A;--err:#B85050;
+            --serif:'Cormorant Garamond',Georgia,serif;
+            --sans:'Outfit',sans-serif;
+        }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+        html{font-size:16px;}
+        body{font-family:var(--sans);background:var(--ink);color:var(--p);overflow-x:hidden;cursor:none;min-height:100vh;}
+        body::after{content:'';position:fixed;inset:0;z-index:9997;pointer-events:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");opacity:.4;}
+
+        /* Cursor */
+        #cursor{position:fixed;top:0;left:0;z-index:9999;pointer-events:none;}
+        #cd{width:7px;height:7px;border-radius:50%;background:#D4AF6E;position:absolute;transform:translate(-50%,-50%);}
+        #cr{width:32px;height:32px;border-radius:50%;border:1px solid rgba(184,150,90,.42);position:absolute;transform:translate(-50%,-50%);transition:width .35s,height .35s;}
+        body.hov #cr{width:52px;height:52px;}
+
+        /* Nav */
+        #nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:0 28px;height:64px;
+            display:flex;align-items:center;justify-content:space-between;
+            background:rgba(10,9,6,.94);backdrop-filter:blur(22px);border-bottom:1px solid rgba(184,150,90,.1);}
+        .nbrand{display:flex;align-items:center;gap:9px;text-decoration:none;}
+        .nseal{width:28px;height:28px;} .nseal svg{width:100%;height:100%;}
+        .nname{font-family:var(--serif);font-size:1.15rem;font-weight:600;color:var(--p);}
+        .nname sup{font-family:var(--sans);font-size:.45rem;letter-spacing:2px;color:var(--g);vertical-align:super;}
+        .nbtn{padding:7px 16px;border:1px solid rgba(184,150,90,.18);border-radius:2px;color:rgba(245,240,232,.4);
+            background:transparent;font-family:var(--sans);font-size:.68rem;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;}
+        .nbtn:hover{color:var(--p);border-color:rgba(184,150,90,.35);}
+        .nright{display:flex;align-items:center;gap:10px;}
+
+        /* Layout */
+        .wrap{max-width:860px;margin:0 auto;padding:100px 24px 60px;}
+
+        /* Profile Header */
+        .prof-header{display:flex;align-items:flex-start;gap:28px;margin-bottom:40px;padding-bottom:36px;border-bottom:1px solid rgba(184,150,90,.08);}
+        .prof-avatar{width:90px;height:90px;border-radius:50%;background:rgba(184,150,90,.1);border:1px solid rgba(184,150,90,.25);
+            display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:2.2rem;color:var(--g);flex-shrink:0;}
+        .prof-meta{flex:1;}
+        .prof-eyebrow{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gd);margin-bottom:6px;}
+        .prof-name{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.6rem);font-weight:300;line-height:1.1;margin-bottom:8px;}
+        .prof-name em{font-style:italic;color:var(--g);}
+        .prof-tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+        .ptag{padding:3px 11px;border-radius:1px;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;}
+        .ptag-role{background:rgba(184,150,90,.08);color:var(--g);border:1px solid rgba(184,150,90,.18);}
+        .ptag-spec{background:rgba(92,158,114,.08);color:var(--ok);border:1px solid rgba(92,158,114,.18);}
+        .ptag-verified{background:rgba(92,158,114,.06);color:var(--ok);border:1px solid rgba(92,158,114,.15);}
+        .ptag-pending-verify{background:rgba(196,135,58,.06);color:var(--warn);border:1px solid rgba(196,135,58,.18);}
+        .prof-joined{font-size:.72rem;color:var(--di);}
+        .prof-header-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+
+        /* Stats row (lawyers) */
+        .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:14px;}
+        .stat-box{background:var(--ink2);border:1px solid rgba(184,150,90,.07);border-radius:2px;padding:18px;text-align:center;position:relative;overflow:hidden;transition:border-color .25s;}
+        .stat-box::after{content:'';position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--g);transition:width .4s cubic-bezier(.76,0,.24,1);}
+        .stat-box:hover{border-color:rgba(184,150,90,.18);}
+        .stat-box:hover::after{width:100%;}
+        .stat-val{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--p);line-height:1;}
+        .stat-lbl{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-top:4px;}
+        .stat-sub{font-size:.7rem;color:var(--gd);margin-top:2px;}
+
+        /* Score bar */
+        .score-wrap{background:var(--ink2);border:1px solid rgba(184,150,90,.09);border-radius:2px;padding:20px 24px;margin-bottom:32px;}
+        .score-label{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gd);margin-bottom:10px;}
+        .score-bar-bg{height:6px;background:var(--ink3);border-radius:3px;overflow:hidden;}
+        .score-bar-fill{height:100%;background:linear-gradient(90deg,var(--g),var(--gl));border-radius:3px;transition:width 1s cubic-bezier(.76,0,.24,1);}
+        .score-nums{display:flex;justify-content:space-between;margin-top:8px;font-size:.72rem;color:var(--mu);}
+
+        /* Sections */
+        .section{margin-bottom:32px;}
+        .section-label{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gd);margin-bottom:14px;
+            display:flex;align-items:center;gap:10px;}
+        .section-label::after{content:'';flex:1;height:1px;background:rgba(184,150,90,.07);}
+
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;}
+        .info-item{background:var(--ink2);border:1px solid rgba(184,150,90,.06);border-radius:2px;padding:14px 18px;}
+        .info-key{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gd);margin-bottom:5px;}
+        .info-val{font-size:.9rem;color:var(--p);font-weight:300;}
+        .info-val.redacted{color:var(--di);font-style:italic;}
+
+        .bio-box{background:var(--ink2);border:1px solid rgba(184,150,90,.06);border-radius:2px;padding:20px 22px;
+            font-size:.88rem;color:var(--mu);line-height:1.85;font-weight:300;}
+
+        /* Case history chips */
+        .case-chips{display:flex;flex-wrap:wrap;gap:6px;}
+        .case-chip{padding:4px 12px;background:var(--ink2);border:1px solid rgba(184,150,90,.09);border-radius:1px;
+            font-size:.68rem;letter-spacing:.8px;color:var(--mu);}
+        .case-chip.win{border-color:rgba(92,158,114,.2);color:var(--ok);}
+
+        /* Edit Form */
+        .edit-form{background:var(--ink2);border:1px solid rgba(184,150,90,.09);border-radius:2px;padding:28px;display:none;}
+        .edit-form.show{display:block;animation:aIn .25s ease;}
+        @keyframes aIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+        .fg{margin-bottom:16px;}
+        .flbl{display:block;font-size:.66rem;font-weight:500;color:var(--mu);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;}
+        .finp,.fselect,.ftextarea{width:100%;padding:10px 12px;background:var(--ink3);border:1px solid rgba(184,150,90,.1);
+            border-radius:2px;color:var(--p);font-family:var(--sans);font-size:.86rem;transition:all .2s;}
+        .finp:focus,.fselect:focus,.ftextarea:focus{outline:none;border-color:rgba(184,150,90,.38);box-shadow:0 0 0 3px rgba(184,150,90,.05);background:var(--ink4);}
+        .ftextarea{resize:vertical;min-height:80px;}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .form-actions{display:flex;gap:8px;margin-top:6px;}
+
+        /* Buttons */
+        .btn{padding:9px 20px;border-radius:2px;font-family:var(--sans);font-size:.72rem;font-weight:500;
+            letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .25s;border:1px solid transparent;}
+        .btn-gold{background:var(--g);color:var(--ink);border-color:var(--g);}
+        .btn-gold:hover:not(:disabled){background:var(--gl);}
+        .btn-gold:disabled{opacity:.45;}
+        .btn-outline{background:transparent;color:var(--mu);border-color:rgba(184,150,90,.2);}
+        .btn-outline:hover{color:var(--p);border-color:rgba(184,150,90,.4);}
+        .btn-danger{background:transparent;color:var(--err);border-color:rgba(184,80,80,.22);}
+        .btn-danger:hover{background:rgba(184,80,80,.06);}
+        .btn-sm-prof{padding:7px 16px;border-radius:2px;font-family:var(--sans);font-size:.65rem;
+            letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;border:1px solid rgba(184,150,90,.2);background:transparent;color:rgba(245,240,232,.5);}
+        .btn-sm-prof:hover{color:var(--p);border-color:rgba(184,150,90,.4);}
+
+        /* Danger zone */
+        .danger-zone{background:rgba(184,80,80,.03);border:1px solid rgba(184,80,80,.12);border-radius:2px;padding:22px 24px;}
+        .dz-title{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--err);margin-bottom:10px;}
+        .dz-desc{font-size:.82rem;color:var(--mu);line-height:1.7;margin-bottom:16px;}
+        .dz-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+        /* Modal */
+        .modal-overlay{position:fixed;inset:0;background:rgba(10,9,6,.87);z-index:2000;
+            display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+        .modal-overlay.open{display:flex;animation:mIn .2s ease;}
+        @keyframes mIn{from{opacity:0;}to{opacity:1;}}
+        .modal{background:var(--ink2);border:1px solid rgba(184,150,90,.18);border-radius:2px;padding:34px;max-width:420px;width:90%;}
+        .modal-title{font-family:var(--serif);font-size:1.4rem;font-weight:300;margin-bottom:10px;}
+        .modal-body{font-size:.84rem;color:var(--mu);line-height:1.75;margin-bottom:24px;}
+        .modal-input{width:100%;padding:10px 12px;background:var(--ink3);border:1px solid rgba(184,150,90,.15);
+            border-radius:2px;color:var(--p);font-family:var(--sans);font-size:.86rem;margin-bottom:20px;}
+        .modal-input:focus{outline:none;border-color:rgba(184,150,90,.4);}
+        .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+        /* OTP Banner (placeholder for future) */
+        .verify-banner{display:flex;align-items:center;gap:14px;background:rgba(196,135,58,.05);
+            border:1px solid rgba(196,135,58,.18);border-radius:2px;padding:14px 18px;margin-bottom:28px;}
+        .vb-icon{font-size:1.2rem;flex-shrink:0;}
+        .vb-text{flex:1;font-size:.82rem;color:var(--warn);line-height:1.6;}
+        .vb-btn{padding:6px 14px;background:transparent;border:1px solid rgba(196,135,58,.35);border-radius:2px;
+            color:var(--warn);font-family:var(--sans);font-size:.65rem;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;}
+        .vb-btn:hover{background:rgba(196,135,58,.08);}
+
+        .loading{text-align:center;padding:80px 20px;color:var(--di);font-size:.9rem;}
+        .btn-inline-edit{padding:4px 10px;background:transparent;border:1px solid rgba(184,150,90,.18);border-radius:2px;
+            color:var(--gd);font-family:var(--sans);font-size:.6rem;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;margin-left:auto;}
+        .btn-inline-edit:hover{color:var(--g);border-color:rgba(184,150,90,.35);}
+        .section-label{display:flex;align-items:center;}
+
+        @media(hover:none){body{cursor:auto;}#cursor{display:none;}}
+        @media(max-width:640px){
+            .prof-header{flex-direction:column;}
+            .info-grid{grid-template-columns:1fr;}
+            .form-row{grid-template-columns:1fr;}
+            .stats-row{grid-template-columns:1fr 1fr;}
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor"><div id="cd"></div><div id="cr"></div></div>
+
+    <nav id="nav">
+        <a href="final_index.html" class="nbrand">
+            <div class="nseal">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18.7" stroke="#B8965A" stroke-width=".5" stroke-dasharray="2.5 3"/>
+                    <circle cx="20" cy="20" r="13" stroke="#B8965A" stroke-width=".35" opacity=".4"/>
+                    <path d="M20 9L22.6 16.8H30.8L24.1 21.5L26.7 29.3L20 24.6L13.3 29.3L15.9 21.5L9.2 16.8H17.4Z" fill="none" stroke="#B8965A" stroke-width=".6" stroke-linejoin="round"/>
+                    <circle cx="20" cy="20" r="1.8" fill="#B8965A" opacity=".45"/>
+                </svg>
+            </div>
+            <span class="nname">LexAid<sup>™</sup></span>
+        </a>
+        <div class="nright">
+            <button class="nbtn" id="backBtn" onclick="history.back()">← Back</button>
+        </div>
+    </nav>
+
+    <div class="wrap">
+        <div class="loading" id="loadingState">Loading profile…</div>
+        <div id="profileContent" style="display:none;"></div>
+    </div>
+
+    <!-- Confirm / Input Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">Confirm</div>
+            <div class="modal-body" id="modalBody"></div>
+            <input class="modal-input" id="modalInput" placeholder="" style="display:none;" />
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="modalCancel">Cancel</button>
+                <button class="btn btn-danger"  id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCE7M7gRFIAXDcSY6ZJ_8on9VEoZFqIK6c",
+            authDomain: "legal-aid-system.firebaseapp.com",
+            projectId: "legal-aid-system",
+            storageBucket: "legal-aid-system.firebasestorage.app",
+            messagingSenderId: "899184926650",
+            appId: "1:899184926650:web:04c691c105e12afcd40783"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db   = getFirestore(app);
+
+        const params    = new URLSearchParams(window.location.search);
+        const targetId  = params.get('uid');   // if viewing someone else
+        let currentUser = null;
+        let profileData = null;
+        let isOwnProfile = false;
+
+        // ── Auth guard ──────────────────────────────────────────────────────────
+        onAuthStateChanged(auth, async user => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            currentUser = user;
+            const uid = targetId || user.uid;
+            isOwnProfile = uid === user.uid;
+            await loadProfile(uid);
+        });
+
+        // ── Load profile data ───────────────────────────────────────────────────
+        async function loadProfile(uid) {
+            const snap = await getDoc(doc(db, 'users', uid));
+            if (!snap.exists()) {
+                document.getElementById('loadingState').textContent = 'Profile not found.';
+                return;
+            }
+            profileData = { uid, ...snap.data() };
+
+            // Load case stats + feedback ratings for lawyers
+            let stats = { total: 0, accepted: 0, closed: 0, pending: 0, successRate: 0,
+                          avgRating: 0, ratingCount: 0, reviews: [] };
+            if (profileData.role === 'lawyer') {
+                const [lawyerSnap, feedbackSnap] = await Promise.all([
+                    getDocs(query(collection(db, 'requests'), where('lawyerId', '==', uid))),
+                    getDocs(query(collection(db, 'feedback'), where('lawyerId', '==', uid)))
+                ]);
+                const allDocs = lawyerSnap.docs.map(d => d.data());
+                stats.total    = allDocs.length;
+                stats.accepted = allDocs.filter(d => d.status === 'accepted').length;
+                stats.closed   = allDocs.filter(d => d.status === 'closed').length;
+                stats.successRate = stats.total > 0 ? Math.round((stats.closed / stats.total) * 100) : 0;
+
+                // Feedback
+                const fbDocs = feedbackSnap.docs.map(d => d.data());
+                stats.ratingCount = fbDocs.length;
+                stats.avgRating   = fbDocs.length > 0
+                    ? Math.round((fbDocs.reduce((s, d) => s + d.rating, 0) / fbDocs.length) * 10) / 10
+                    : 0;
+                stats.reviews = fbDocs.filter(d => d.review).slice(0, 3); // show latest 3 reviews
+            }
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('profileContent').style.display = 'block';
+            renderProfile(profileData, stats);
+        }
+
+        // ── Render ──────────────────────────────────────────────────────────────
+        function renderProfile(p, stats) {
+            const initials = (p.fullName || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+            const joinedDate = p.createdAt?.toDate ? new Date(p.createdAt.toDate()).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+            const isLawyer = p.role === 'lawyer';
+            const isVerified = currentUser?.emailVerified;
+
+            // Score bar fill width
+            const scoreWidth = Math.min(stats.successRate, 100);
+
+            let verifyBanner = '';
+            if (isOwnProfile && !isVerified) {
+                verifyBanner = `
+                    <div class="verify-banner">
+                        <div class="vb-icon">📧</div>
+                        <div class="vb-text">Your email is not verified yet. Verify it to get a trust badge visible to other users.<br>
+                            <small style="color:var(--di);">After clicking the link in your email, reload this page to see your verified status.</small>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <button class="vb-btn" onclick="sendVerifyEmail()">Send Link</button>
+                            <button class="vb-btn" onclick="location.reload()">↺ Reload</button>
+                        </div>
+                    </div>`;
+            } else if (isOwnProfile && isVerified) {
+                // show nothing — they're verified
+            }
+
+            let headerActions = '';
+            if (isOwnProfile) {
+                headerActions = `
+                    <button class="btn btn-outline btn-sm-prof" onclick="toggleEdit()">✏ Edit Profile</button>
+                    <button class="btn btn-outline btn-sm-prof" onclick="window.location.href='${isLawyer ? 'lawyer-dashboard.html' : 'client-dashboard.html'}'">← Dashboard</button>`;
+            }
+
+            // Info items — hide sensitive fields for others
+            const phoneVal = isOwnProfile ? (p.phone || '—') : '<span class="redacted">Hidden for privacy</span>';
+            const emailVal = isOwnProfile ? (p.email || '—') : (p.email ? p.email.replace(/(.{2}).+(@.+)/, '$1***$2') : '—');
+
+            const infoGrid = `
+                <div class="info-item"><div class="info-key">Full Name</div><div class="info-val">${p.fullName || '—'}</div></div>
+                <div class="info-item"><div class="info-key">Email</div><div class="info-val">${emailVal}</div></div>
+                <div class="info-item"><div class="info-key">Phone</div><div class="info-val info-val">${phoneVal}</div></div>
+                <div class="info-item"><div class="info-key">City / Location</div><div class="info-val">${p.city || '—'}</div></div>
+                ${isLawyer ? `
+                <div class="info-item"><div class="info-key">Specialization</div><div class="info-val">${p.specialization || '—'}</div></div>
+                <div class="info-item"><div class="info-key">Experience</div><div class="info-val">${p.experience ? p.experience + ' years' : '—'}</div></div>
+                <div class="info-item"><div class="info-key">Bar Council ID</div><div class="info-val">${isOwnProfile ? (p.barCouncilId || '—') : '***'}</div></div>
+                <div class="info-item"><div class="info-key">Languages</div><div class="info-val">${p.languages || '—'}</div></div>
+                ` : ''}`;
+
+            const statsSection = isLawyer ? `
+                <div class="section">
+                    <div class="section-label">Performance</div>
+                    <div class="stats-row">
+                        <div class="stat-box"><div class="stat-val">${stats.total}</div><div class="stat-lbl">Total Cases</div></div>
+                        <div class="stat-box"><div class="stat-val">${stats.accepted}</div><div class="stat-lbl">Active Now</div></div>
+                        <div class="stat-box"><div class="stat-val">${stats.closed}</div><div class="stat-lbl">Closed</div></div>
+                        <div class="stat-box"><div class="stat-val">${stats.successRate}%</div><div class="stat-lbl">Success Rate</div><div class="stat-sub">${stats.closed}/${stats.total}</div></div>
+                        <div class="stat-box">
+                            <div class="stat-val">${stats.avgRating > 0 ? stats.avgRating : '—'}</div>
+                            <div class="stat-lbl">Avg Rating</div>
+                            <div class="stat-sub">${stats.ratingCount} review${stats.ratingCount !== 1 ? 's' : ''}</div>
+                        </div>
+                    </div>
+                    ${stats.ratingCount > 0 ? `
+                    <div style="margin-bottom:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            ${'★'.repeat(Math.round(stats.avgRating)).split('').map(()=>'<span style="color:var(--g);font-size:1.1rem;">★</span>').join('')}
+                            ${'☆'.repeat(5-Math.round(stats.avgRating)).split('').map(()=>'<span style="color:var(--di);font-size:1.1rem;">★</span>').join('')}
+                            <span style="font-size:.8rem;color:var(--mu);margin-left:4px;">${stats.avgRating}/5 from ${stats.ratingCount} client${stats.ratingCount!==1?'s':''}</span>
+                        </div>
+                        ${stats.reviews.map(r => `
+                        <div style="background:var(--ink3);border:1px solid rgba(184,150,90,.07);border-radius:2px;padding:12px 16px;margin-bottom:2px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                ${'★'.repeat(r.rating).split('').map(()=>'<span style="color:var(--g);font-size:.85rem;">★</span>').join('')}
+                                ${'★'.repeat(5-r.rating).split('').map(()=>'<span style="color:var(--di);font-size:.85rem;">★</span>').join('')}
+                                <span style="font-size:.65rem;color:var(--gd);margin-left:4px;">${r.clientName || 'Anonymous'}</span>
+                            </div>
+                            <div style="font-size:.82rem;color:var(--mu);line-height:1.65;">${esc(r.review)}</div>
+                        </div>`).join('')}
+                    </div>` : ''}
+                    <div class="score-wrap">
+                        <div class="score-label">Overall Success Score</div>
+                        <div class="score-bar-bg"><div class="score-bar-fill" id="scoreBar" style="width:0%"></div></div>
+                        <div class="score-nums"><span>0%</span><span style="color:var(--g)">${stats.successRate}%</span><span>100%</span></div>
+                    </div>
+                </div>` : '';
+
+            const dangerZone = isOwnProfile ? `
+                <div class="section">
+                    <div class="section-label">Account</div>
+                    <div class="danger-zone">
+                        <div class="dz-title">Danger Zone</div>
+                        <div class="dz-desc">These actions are permanent and cannot be undone. Deleting your account will remove all your data from LexAid including case history.</div>
+                        <div class="dz-actions">
+                            <button class="btn btn-danger" onclick="doChangePassword()">Change Password</button>
+                            <button class="btn btn-danger" onclick="doDeleteAccount()">Delete My Account</button>
+                        </div>
+                    </div>
+                </div>` : '';
+
+            // Edit form (own profile only)
+            const editForm = isOwnProfile ? `
+                <div class="edit-form" id="editForm">
+                    <div class="section-label" style="margin-bottom:20px;">Edit Profile</div>
+                    <div class="form-row">
+                        <div class="fg"><label class="flbl">Full Name</label><input class="finp" id="ef-name" value="${esc(p.fullName || '')}" /></div>
+                        <div class="fg"><label class="flbl">Phone</label><input class="finp" id="ef-phone" value="${esc(p.phone || '')}" /></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="fg"><label class="flbl">City / Location</label><input class="finp" id="ef-city" placeholder="e.g. New Delhi" value="${esc(p.city || '')}" /></div>
+                        ${isLawyer ? `<div class="fg"><label class="flbl">Experience (years)</label><input class="finp" type="number" id="ef-exp" value="${esc(String(p.experience || ''))}" /></div>` : '<div></div>'}
+                    </div>
+                    ${isLawyer ? `
+                    <div class="form-row">
+                        <div class="fg"><label class="flbl">Specialization</label>
+                            <select class="fselect" id="ef-spec">
+                                ${['Criminal Law','Civil Law','Family Law','Corporate Law','Property Law','Labour Law','Constitutional Law','General Practice'].map(s => `<option ${p.specialization===s?'selected':''}>${s}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="fg"><label class="flbl">Languages Spoken</label><input class="finp" id="ef-lang" placeholder="e.g. Hindi, English" value="${esc(p.languages || '')}" /></div>
+                    </div>` : ''}
+                    <div class="fg"><label class="flbl">Bio / About</label><textarea class="ftextarea" id="ef-bio" placeholder="Write a short introduction…">${esc(p.bio || '')}</textarea></div>
+                    <div class="form-actions">
+                        <button class="btn btn-gold" id="saveBtn" onclick="saveProfile()">Save Changes</button>
+                        <button class="btn btn-outline" onclick="toggleEdit()">Cancel</button>
+                    </div>
+                </div>` : '';
+
+            document.getElementById('profileContent').innerHTML = `
+                ${verifyBanner}
+
+                <div class="prof-header">
+                    <div class="prof-avatar">${initials}</div>
+                    <div class="prof-meta">
+                        <div class="prof-eyebrow">${isLawyer ? 'Legal Professional' : 'Client'}</div>
+                        <div class="prof-name">${(()=>{const parts=(p.fullName||'Unknown').split(' ');return parts.length>1?parts[0]+' <em>'+parts.slice(1).join(' ')+'</em>':parts[0];})()} </div>
+                        <div class="prof-tags">
+                            <span class="ptag ptag-role">${isLawyer ? '⚖ Lawyer' : '👤 Client'}</span>
+                            ${isLawyer && p.specialization ? `<span class="ptag ptag-spec">${p.specialization}</span>` : ''}
+                            ${currentUser?.emailVerified ? '<span class="ptag ptag-verified">✓ Verified</span>' : '<span class="ptag ptag-pending-verify">Unverified</span>'}
+                        </div>
+                        <div class="prof-joined">Member since ${joinedDate}</div>
+                    </div>
+                    <div class="prof-header-actions">${headerActions}</div>
+                </div>
+
+                ${editForm}
+                ${statsSection}
+
+                <div class="section">
+                    <div class="section-label">Information</div>
+                    <div class="info-grid">${infoGrid}</div>
+                </div>
+
+                <div class="section">
+                    <div class="section-label">About
+                        ${isOwnProfile ? '<button class="btn-inline-edit" onclick="toggleBioEdit()">✏ Edit Bio</button>' : ''}
+                    </div>
+                    <div class="bio-box" id="bioDisplay">${p.bio || '<span style="color:var(--di);font-style:italic;">No bio added yet — click Edit Bio to add one.</span>'}</div>
+                    ${isOwnProfile ? `
+                    <div id="bioEditArea" style="display:none;margin-top:8px;">
+                        <textarea class="ftextarea" id="bio-inline" placeholder="Write a short introduction about yourself…" style="min-height:100px;">${esc(p.bio || '')}</textarea>
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <button class="btn btn-gold" style="padding:7px 18px;font-size:.7rem;" onclick="saveBio()">Save Bio</button>
+                            <button class="btn btn-outline" style="padding:7px 18px;font-size:.7rem;" onclick="toggleBioEdit()">Cancel</button>
+                        </div>
+                    </div>` : ''}
+                </div>
+
+                ${dangerZone}`;
+
+            // Animate score bar
+            if (isLawyer) {
+                setTimeout(() => {
+                    const bar = document.getElementById('scoreBar');
+                    if (bar) bar.style.width = scoreWidth + '%';
+                }, 400);
+            }
+
+            // Re-attach cursor hover listeners
+            document.querySelectorAll('a,button,input,textarea,select').forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hov'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hov'));
+            });
+
+            // GSAP entrance
+            gsap.from('.prof-header', { opacity: 0, y: 20, duration: .7, ease: 'power3.out' });
+            gsap.from('.section',     { opacity: 0, y: 16, duration: .6, ease: 'power2.out', stagger: .1, delay: .15 });
+        }
+
+        // ── Edit toggle ─────────────────────────────────────────────────────────
+        window.toggleEdit = function() {
+            const f = document.getElementById('editForm');
+            if (f) f.classList.toggle('show');
+        };
+
+        // ── Quick bio edit ──────────────────────────────────────────────────────
+        window.toggleBioEdit = function() {
+            const area = document.getElementById('bioEditArea');
+            if (!area) return;
+            const showing = area.style.display !== 'none';
+            area.style.display = showing ? 'none' : 'block';
+            if (!showing) document.getElementById('bio-inline')?.focus();
+        };
+
+        window.saveBio = async function() {
+            const val = document.getElementById('bio-inline')?.value?.trim() || '';
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid), { bio: val, updatedAt: serverTimestamp() });
+                profileData.bio = val;
+                const display = document.getElementById('bioDisplay');
+                if (display) display.innerHTML = val || '<span style="color:var(--di);font-style:italic;">No bio added yet.</span>';
+                toggleBioEdit();
+                showNotice('Bio updated.', 'ok');
+            } catch (e) { showNotice('Error: ' + e.message); }
+        };
+
+        // ── Save profile ────────────────────────────────────────────────────────
+        window.saveProfile = async function() {
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            const isLawyer = profileData.role === 'lawyer';
+            const updates = {
+                fullName: document.getElementById('ef-name').value.trim(),
+                phone:    document.getElementById('ef-phone').value.trim(),
+                city:     document.getElementById('ef-city').value.trim(),
+                bio:      document.getElementById('ef-bio').value.trim(),
+                updatedAt: serverTimestamp()
+            };
+            if (isLawyer) {
+                updates.specialization = document.getElementById('ef-spec').value;
+                updates.languages      = document.getElementById('ef-lang').value.trim();
+                const exp = document.getElementById('ef-exp').value;
+                if (exp) updates.experience = parseInt(exp);
+            }
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid), updates);
+                showNotice('Profile updated successfully.', 'ok');
+                Object.assign(profileData, updates);
+                toggleEdit();
+                // Refresh name in header
+                const nameParts = updates.fullName.split(' ');
+                document.querySelector('.prof-name').innerHTML = nameParts.length > 1 ? nameParts[0] + ' <em>' + nameParts.slice(1).join(' ') + '</em>' : nameParts[0];
+            } catch (e) { showNotice('Error: ' + e.message); }
+            btn.disabled = false; btn.textContent = 'Save Changes';
+        };
+
+        // ── Email verification ──────────────────────────────────────────────────
+        window.sendVerifyEmail = async function() {
+            try {
+                await sendEmailVerification(currentUser);
+                showNotice('Verification link sent to ' + currentUser.email + ' — check your inbox and spam folder.', 'ok');
+                // After user verifies in their email, they should reload this page to see the badge
+                setTimeout(() => showNotice('After clicking the link in your email, reload this page to see your verified badge.', 'ok'), 5000);
+            } catch (e) {
+                const msgs = {
+                    'auth/too-many-requests': 'Too many requests. Wait a few minutes before trying again.',
+                    'auth/user-not-found': 'User not found.'
+                };
+                showNotice(msgs[e.code] || 'Could not send verification: ' + e.message);
+            }
+        };
+
+        // ── Change password ─────────────────────────────────────────────────────
+        window.doChangePassword = function() {
+            showModal('Change Password', 'Enter your current password to confirm, then your new password.', true, 'New password (min. 6 chars)', 'Change Password', async (val) => {
+                if (!val || val.length < 6) { showNotice('Password must be at least 6 characters.'); return; }
+                showModal('Confirm Current Password', 'Re-enter your current password to authorise this change.', true, 'Current password', 'Confirm', async (current) => {
+                    try {
+                        const cred = EmailAuthProvider.credential(currentUser.email, current);
+                        await reauthenticateWithCredential(currentUser, cred);
+                        await updatePassword(currentUser, val);
+                        showNotice('Password changed successfully.', 'ok');
+                    } catch (e) {
+                        const msgs = { 'auth/wrong-password': 'Current password is incorrect.', 'auth/weak-password': 'New password is too weak.' };
+                        showNotice(msgs[e.code] || e.message);
+                    }
+                });
+            });
+        };
+
+        // ── Delete account ──────────────────────────────────────────────────────
+        window.doDeleteAccount = function() {
+            showModal('Delete Account?',
+                'This is permanent. All your data, cases and messages will be deleted. Type DELETE to confirm.',
+                true, 'Type DELETE to confirm', 'Delete Forever', async (val) => {
+                    if (val !== 'DELETE') { showNotice('You must type DELETE exactly.'); return; }
+                    showModal('Re-authenticate', 'Enter your password to confirm deletion.', true, 'Your password', 'Proceed', async (pass) => {
+                        try {
+                            const cred = EmailAuthProvider.credential(currentUser.email, pass);
+                            await reauthenticateWithCredential(currentUser, cred);
+                            // Delete Firestore user doc
+                            await deleteDoc(doc(db, 'users', currentUser.uid));
+                            // Delete Firebase Auth user
+                            await deleteUser(currentUser);
+                            window.location.href = 'final_index.html';
+                        } catch (e) {
+                            const msgs = { 'auth/wrong-password': 'Incorrect password.' };
+                            showNotice(msgs[e.code] || e.message);
+                        }
+                    });
+                });
+        };
+
+        // ── Modal ───────────────────────────────────────────────────────────────
+        let _modalCb = null;
+        function showModal(title, body, hasInput, inputPlaceholder, confirmLbl, cb) {
+            document.getElementById('modalTitle').textContent   = title;
+            document.getElementById('modalBody').textContent    = body;
+            document.getElementById('modalConfirm').textContent = confirmLbl;
+            const inp = document.getElementById('modalInput');
+            if (hasInput) { inp.style.display = 'block'; inp.placeholder = inputPlaceholder; inp.value = ''; inp.type = confirmLbl.toLowerCase().includes('password') || inputPlaceholder.toLowerCase().includes('password') ? 'password' : 'text'; }
+            else { inp.style.display = 'none'; }
+            _modalCb = () => cb(inp.value.trim());
+            document.getElementById('modal').classList.add('open');
+        }
+        document.getElementById('modalCancel').addEventListener('click',  () => document.getElementById('modal').classList.remove('open'));
+        document.getElementById('modalConfirm').addEventListener('click', () => { document.getElementById('modal').classList.remove('open'); if (_modalCb) _modalCb(); });
+
+        // ── Notice ──────────────────────────────────────────────────────────────
+        function showNotice(msg, type = 'err') {
+            let n = document.getElementById('__notice');
+            if (!n) {
+                n = document.createElement('div');
+                n.id = '__notice';
+                n.style.cssText = 'position:fixed;top:72px;right:24px;z-index:3000;padding:12px 18px;border-radius:2px;font-size:.82rem;border-left:2px solid;max-width:340px;backdrop-filter:blur(6px);animation:aIn .25s ease;';
+                document.body.appendChild(n);
+            }
+            n.style.background  = type === 'ok' ? 'rgba(92,158,114,.12)' : 'rgba(184,80,80,.1)';
+            n.style.borderColor = type === 'ok' ? 'var(--ok)' : 'var(--err)';
+            n.style.color       = type === 'ok' ? 'var(--ok)' : 'var(--err)';
+            n.textContent = (type === 'ok' ? '✓ ' : '⚠ ') + msg;
+            clearTimeout(n._t);
+            n._t = setTimeout(() => { if (n) n.remove(); }, 4500);
+        }
+
+        function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+        // ── Cursor ──────────────────────────────────────────────────────────────
+        const cd = document.getElementById('cd'), cr = document.getElementById('cr');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+        window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+        (function loop() {
+            rx += (mx - rx) * .11; ry += (my - ry) * .11;
+            cd.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+            cr.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+            requestAnimationFrame(loop);
+        })();
+    </script>
+</body>
+</html>

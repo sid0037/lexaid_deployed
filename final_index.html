@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LexAid — Legal Aid Management System</title>
+
+<!-- Fonts: loaded async so layout never blocks -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+/* ═══════════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════════ */
+:root{
+  --ink:   #080705;
+  --ink2:  #0f0e0a;
+  --ink3:  #181510;
+  --ink4:  #252118;
+  --p:     #F6F1E9;
+  --p2:    #ccc5b5;
+  --g:     #B8965A;
+  --gl:    #D4AF6E;
+  --gd:    #7A6038;
+  --gx:    #4a3a1e;
+  --mu:    #6B6355;
+  --di:    #3A3528;
+  --ok:    #5C9E72;
+  --serif: 'Cormorant Garamond', 'Times New Roman', serif;
+  --sans:  'Outfit', 'Segoe UI', sans-serif;
+  --ease-out-expo: cubic-bezier(0.16,1,0.3,1);
+  --ease-in-out-circ: cubic-bezier(0.785,0.135,0.15,0.86);
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{
+  font-family:var(--sans);
+  background:var(--ink);
+  color:var(--p);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ═══════════════════════════════════════════════════
+   NOISE OVERLAY (pure CSS, no img needed)
+═══════════════════════════════════════════════════ */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:9990;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size:220px 220px;
+  opacity:.038;
+  mix-blend-mode:overlay;
+}
+
+/* ═══════════════════════════════════════════════════
+   CURSOR — fully self-contained
+═══════════════════════════════════════════════════ */
+#cur-dot{
+  position:fixed;top:0;left:0;z-index:9999;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gl);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  transition:transform .08s,background .2s;
+  will-change:transform;
+}
+#cur-ring{
+  position:fixed;top:0;left:0;z-index:9998;
+  width:36px;height:36px;border-radius:50%;
+  border:1.2px solid rgba(184,150,90,.38);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  transition:width .4s var(--ease-out-expo),height .4s var(--ease-out-expo),
+             border-color .3s,opacity .3s;
+  will-change:transform;
+}
+body.cur-link #cur-ring{width:56px;height:56px;border-color:rgba(184,150,90,.6);}
+body.cur-link #cur-dot{transform:translate(-50%,-50%) scale(0);}
+
+/* ═══════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════ */
+#nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  height:72px;padding:0 60px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid transparent;
+  transition:background .6s,border-color .6s,backdrop-filter .6s;
+}
+#nav.scrolled{
+  background:rgba(8,7,5,.88);
+  backdrop-filter:blur(24px) saturate(1.6);
+  border-color:rgba(184,150,90,.1);
+}
+/* Nav entrance */
+#nav{opacity:0;animation:navIn .8s .6s var(--ease-out-expo) forwards;}
+@keyframes navIn{to{opacity:1;}}
+
+.n-brand{display:flex;align-items:center;gap:11px;text-decoration:none;}
+.n-seal{width:34px;height:34px;}
+.n-seal svg{width:100%;height:100%;}
+/* Seal rotation on hover */
+.n-seal svg{transition:transform .8s var(--ease-out-expo);}
+.n-brand:hover .n-seal svg{transform:rotate(72deg);}
+.n-name{
+  font-family:var(--serif);font-size:1.28rem;font-weight:600;
+  color:var(--p);letter-spacing:.3px;
+}
+.n-name sup{
+  font-family:var(--sans);font-size:.46rem;
+  letter-spacing:2px;color:var(--g);vertical-align:super;
+}
+.n-links{display:flex;gap:36px;list-style:none;}
+.n-links a{
+  font-size:.72rem;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(246,241,233,.38);text-decoration:none;
+  transition:color .25s;position:relative;
+}
+.n-links a::after{
+  content:'';position:absolute;bottom:-4px;left:0;
+  width:0;height:1px;background:var(--g);
+  transition:width .35s var(--ease-out-expo);
+}
+.n-links a:hover{color:var(--p);}
+.n-links a:hover::after{width:100%;}
+.n-actions{display:flex;gap:10px;}
+.n-ghost,.n-gold{
+  padding:9px 22px;border-radius:2px;font-family:var(--sans);
+  font-size:.72rem;letter-spacing:1.2px;text-transform:uppercase;
+  text-decoration:none;transition:all .25s;
+}
+.n-ghost{
+  border:1px solid rgba(184,150,90,.26);color:var(--g);background:transparent;
+}
+.n-ghost:hover{background:rgba(184,150,90,.07);border-color:var(--g);}
+.n-gold{
+  background:var(--g);border:1px solid var(--g);
+  color:var(--ink);font-weight:500;
+  position:relative;overflow:hidden;
+}
+.n-gold::before{
+  content:'';position:absolute;inset:0;
+  background:var(--ink);transform:translateX(-101%);
+  transition:transform .38s var(--ease-in-out-circ);
+}
+.n-gold:hover{color:var(--g);}
+.n-gold:hover::before{transform:translateX(0);}
+.n-gold span{position:relative;z-index:1;}
+
+/* ═══════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════ */
+#hero{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  padding:120px 60px 80px;
+}
+
+/* Ambient background glow — CSS only, animates */
+.h-glow{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -5%,
+      rgba(184,150,90,.12) 0%,transparent 65%),
+    radial-gradient(ellipse 35% 40% at 88% 88%,
+      rgba(184,150,90,.06) 0%,transparent 60%);
+  animation:glowPulse 8s ease-in-out infinite alternate;
+}
+@keyframes glowPulse{
+  0%{opacity:.7;transform:scale(1);}
+  100%{opacity:1;transform:scale(1.08);}
+}
+
+/* Fine grid */
+.h-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(184,150,90,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(184,150,90,.028) 1px,transparent 1px);
+  background-size:100px 100px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 40%,black 20%,transparent 80%);
+  animation:gridFade 2s var(--ease-out-expo) both;
+}
+@keyframes gridFade{from{opacity:0;}to{opacity:1;}}
+
+/* Vertical rules — draw in top→bottom */
+.v-rules{
+  position:absolute;inset:0;
+  display:flex;justify-content:space-between;
+  padding:0 60px;pointer-events:none;
+}
+.vr{
+  width:1px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    rgba(184,150,90,.055) 20%,
+    rgba(184,150,90,.055) 80%,
+    transparent 100%);
+  transform:scaleY(0);transform-origin:top;
+}
+/* Staggered draw-in */
+.vr:nth-child(1){animation:drawRule 1.8s .2s var(--ease-out-expo) forwards;}
+.vr:nth-child(2){animation:drawRule 1.8s .32s var(--ease-out-expo) forwards;}
+.vr:nth-child(3){animation:drawRule 1.8s .44s var(--ease-out-expo) forwards;}
+.vr:nth-child(4){animation:drawRule 1.8s .38s var(--ease-out-expo) forwards;}
+.vr:nth-child(5){animation:drawRule 1.8s .26s var(--ease-out-expo) forwards;}
+@keyframes drawRule{to{transform:scaleY(1);}}
+
+/* Ornament */
+.orn{
+  position:absolute;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  opacity:0;animation:fadeIn 1s 1.8s ease forwards;
+}
+.orn.t{top:82px;}.orn.b{bottom:44px;}
+@keyframes fadeIn{to{opacity:1;}}
+.ol{width:1px;height:42px;background:linear-gradient(180deg,transparent,var(--gd));}
+.ol.r{background:linear-gradient(180deg,var(--gd),transparent);}
+.od{width:5px;height:5px;background:var(--g);transform:rotate(45deg);
+  animation:diamondPulse 3s 2.5s ease-in-out infinite alternate;}
+@keyframes diamondPulse{0%{opacity:.5;}100%{opacity:1;box-shadow:0 0 8px rgba(184,150,90,.4);}}
+
+/* year label */
+.h-yr{
+  position:absolute;bottom:40px;right:60px;
+  font-family:var(--serif);font-size:.66rem;letter-spacing:4px;color:var(--di);
+  opacity:0;animation:fadeIn 1s 2.2s ease forwards;
+}
+
+/* ── HERO TEXT ── */
+.h-content{
+  position:relative;text-align:center;max-width:1040px;
+  display:flex;flex-direction:column;align-items:center;
+}
+
+.h-eye{
+  display:flex;align-items:center;gap:16px;
+  font-size:.66rem;letter-spacing:3.5px;text-transform:uppercase;
+  color:var(--g);font-weight:300;
+  margin-bottom:30px;
+  opacity:0;animation:slideUp .8s .72s var(--ease-out-expo) forwards;
+}
+.el{width:26px;height:1px;background:var(--gd);}
+
+/* Title lines clip-reveal */
+.h-title-clip{overflow:hidden;margin-bottom:4px;}
+.h-line-1{
+  font-family:var(--serif);
+  font-size:clamp(4.2rem,9.5vw,9rem);
+  font-weight:300;line-height:.93;letter-spacing:-3px;
+  display:block;
+  opacity:0;transform:translateY(108%);
+  animation:lineUp 1.1s .85s var(--ease-out-expo) forwards;
+}
+.h-line-2{
+  font-family:var(--serif);
+  font-size:clamp(4.8rem,10.5vw,10rem);
+  font-weight:300;font-style:italic;
+  line-height:.93;letter-spacing:-3px;
+  color:var(--g);display:block;
+  opacity:0;transform:translateY(108%);
+  animation:lineUp 1.1s 1.02s var(--ease-out-expo) forwards;
+}
+@keyframes lineUp{to{opacity:1;transform:translateY(0);}}
+
+/* Center rule expand */
+.h-hr{
+  width:0;height:1px;background:var(--gd);margin:34px auto;
+  animation:expandHr 1.2s 1.6s var(--ease-out-expo) forwards;
+}
+@keyframes expandHr{to{width:110px;}}
+
+.h-sub{
+  font-size:clamp(.84rem,1.2vw,.98rem);font-weight:300;
+  color:rgba(246,241,233,.4);line-height:1.95;max-width:430px;
+  opacity:0;transform:translateY(20px);
+  animation:slideUp .9s 1.5s var(--ease-out-expo) forwards;
+}
+@keyframes slideUp{to{opacity:1;transform:translateY(0);}}
+
+.h-cta{
+  display:flex;gap:14px;margin-top:48px;
+  opacity:0;transform:translateY(16px);
+  animation:slideUp .8s 1.75s var(--ease-out-expo) forwards;
+}
+
+/* CTA buttons */
+.btn-primary{
+  position:relative;overflow:hidden;
+  padding:16px 44px;
+  background:var(--g);border:1px solid var(--g);border-radius:2px;
+  color:var(--ink);font-family:var(--sans);
+  font-size:.78rem;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;
+  text-decoration:none;
+  transition:color .32s;
+}
+.btn-primary::before{
+  content:'';position:absolute;inset:0;
+  background:var(--ink);transform:translateX(-101%);
+  transition:transform .42s var(--ease-in-out-circ);
+}
+.btn-primary:hover{color:var(--g);}
+.btn-primary:hover::before{transform:translateX(0);}
+.btn-primary span{position:relative;z-index:1;}
+.btn-outline{
+  padding:16px 44px;
+  border:1px solid rgba(184,150,90,.22);border-radius:2px;
+  color:rgba(246,241,233,.5);background:transparent;
+  font-family:var(--sans);font-size:.78rem;
+  letter-spacing:1.5px;text-transform:uppercase;
+  text-decoration:none;transition:all .25s;
+}
+.btn-outline:hover{border-color:var(--g);color:var(--g);}
+
+/* Scroll indicator */
+.s-ind{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  opacity:0;animation:fadeIn 1s 2.4s ease forwards;
+}
+.s-lbl{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--di);}
+.s-track{width:1px;height:44px;background:rgba(184,150,90,.12);position:relative;overflow:hidden;}
+.s-fill{
+  position:absolute;top:-100%;left:0;right:0;bottom:0;
+  background:linear-gradient(180deg,transparent,var(--g));
+  animation:scrollFill 2.4s ease infinite;
+}
+@keyframes scrollFill{0%{top:-100%;}100%{top:100%;}}
+
+/* ═══════════════════════════════════════════════════
+   MARQUEE
+═══════════════════════════════════════════════════ */
+.mq-strip{
+  border-top:1px solid rgba(184,150,90,.08);
+  border-bottom:1px solid rgba(184,150,90,.08);
+  padding:15px 0;overflow:hidden;white-space:nowrap;
+  background:rgba(184,150,90,.012);
+  position:relative;z-index:1;
+}
+.mq-track{display:inline-flex;animation:mq 36s linear infinite;}
+.mq-track:hover{animation-play-state:paused;}
+@keyframes mq{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.mq-item{
+  display:inline-flex;align-items:center;gap:22px;
+  padding:0 44px;font-size:.65rem;letter-spacing:3px;
+  text-transform:uppercase;color:var(--di);font-weight:300;
+  transition:color .3s;
+}
+.mq-item:hover{color:var(--g);}
+.mq-dot{width:3px;height:3px;border-radius:50%;background:var(--gd);}
+
+/* ═══════════════════════════════════════════════════
+   SECTION COMMONS
+═══════════════════════════════════════════════════ */
+.container{max-width:1320px;margin:0 auto;padding:0 60px;}
+.s-hd{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:72px;padding-bottom:28px;
+  border-bottom:1px solid rgba(184,150,90,.08);
+}
+.s-eye{
+  font-size:.6rem;letter-spacing:3.5px;text-transform:uppercase;
+  color:var(--gd);margin-bottom:13px;
+  display:flex;align-items:center;gap:11px;
+}
+.s-eye::before{content:'';width:16px;height:1px;background:var(--gd);}
+.s-title{
+  font-family:var(--serif);
+  font-size:clamp(2rem,3.4vw,3rem);
+  font-weight:300;line-height:1.1;
+}
+.s-title em{font-style:italic;color:var(--g);}
+.s-num{
+  font-family:var(--serif);font-size:5rem;font-weight:300;
+  color:rgba(184,150,90,.07);line-height:1;flex-shrink:0;
+}
+
+/* ═══════════════════════════════════════════════════
+   PHILOSOPHY
+═══════════════════════════════════════════════════ */
+#philosophy{padding:160px 0;}
+.phil-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:100px;align-items:center;
+}
+.phil-l{position:relative;}
+.phil-bignum{
+  font-family:var(--serif);font-size:11rem;font-weight:300;
+  color:rgba(184,150,90,.045);line-height:1;
+  position:absolute;top:-48px;left:-22px;
+  user-select:none;pointer-events:none;
+}
+.phil-h{
+  font-family:var(--serif);
+  font-size:clamp(2.4rem,3.8vw,3.7rem);
+  font-weight:300;line-height:1.15;letter-spacing:-.4px;
+}
+.phil-h em{font-style:italic;color:var(--g);}
+.phil-p{
+  font-size:.9rem;font-weight:300;line-height:2.1;
+  color:rgba(246,241,233,.42);margin-bottom:26px;
+}
+
+/* STAT ROW */
+.stat-row{display:flex;gap:44px;margin-top:44px;align-items:stretch;}
+.stat-item{}
+.stat-v{
+  font-family:var(--serif);font-size:2.8rem;font-weight:300;
+  color:var(--p);line-height:1;margin-bottom:3px;
+}
+.stat-v em{font-style:normal;font-size:1.3rem;color:var(--g);}
+/* counter animation */
+.stat-v[data-count]{
+  transition:color .3s;
+}
+.stat-l{font-size:.64rem;letter-spacing:2px;text-transform:uppercase;color:var(--mu);}
+.stat-sep{width:1px;background:rgba(184,150,90,.1);align-self:stretch;transform:scaleY(0);transform-origin:top;transition:transform .8s var(--ease-out-expo);}
+.stat-sep.visible{transform:scaleY(1);}
+
+/* ═══════════════════════════════════════════════════
+   PROCESS
+═══════════════════════════════════════════════════ */
+#process{padding:0 0 160px;}
+.proc-list{display:flex;flex-direction:column;}
+.proc-row{
+  display:grid;grid-template-columns:72px 1fr 52px;
+  align-items:center;gap:44px;
+  padding:32px 0;
+  border-bottom:1px solid rgba(184,150,90,.07);
+  position:relative;overflow:hidden;
+  transition:padding .45s var(--ease-out-expo);
+}
+.proc-row::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(184,150,90,.042),transparent);
+  transform:translateX(-101%);
+  transition:transform .55s var(--ease-in-out-circ);
+}
+.proc-row:hover::before{transform:translateX(0);}
+.proc-row:hover{padding-left:14px;}
+.proc-n{
+  font-family:var(--serif);font-size:3.2rem;font-weight:300;
+  color:rgba(184,150,90,.11);text-align:center;
+  transition:color .3s;
+}
+.proc-row:hover .proc-n{color:rgba(184,150,90,.28);}
+.proc-title{
+  font-family:var(--serif);font-size:1.42rem;font-weight:400;
+  margin-bottom:7px;letter-spacing:-.1px;
+  transition:color .2s;
+}
+.proc-row:hover .proc-title{color:var(--g);}
+.proc-desc{font-size:.84rem;font-weight:300;color:var(--mu);line-height:1.8;max-width:520px;}
+.proc-ico{
+  width:50px;height:50px;
+  border:1px solid rgba(184,150,90,.13);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;
+  transition:border-color .3s,background .3s,transform .4s var(--ease-out-expo);
+}
+.proc-row:hover .proc-ico{
+  border-color:var(--g);background:rgba(184,150,90,.07);
+  transform:rotate(12deg) scale(1.08);
+}
+
+/* ═══════════════════════════════════════════════════
+   BENTO GRID
+═══════════════════════════════════════════════════ */
+#features{padding:0 0 160px;}
+.bento{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:2px;margin-top:60px;
+}
+.bc{
+  background:var(--ink2);
+  border:1px solid rgba(184,150,90,.07);
+  padding:42px 38px;
+  position:relative;overflow:hidden;
+  transition:border-color .3s,background .35s;
+}
+/* Gold sweep underline */
+.bc::after{
+  content:'';position:absolute;bottom:0;left:0;
+  height:2px;width:0;background:var(--g);
+  transition:width .55s var(--ease-in-out-circ);
+}
+.bc:hover{border-color:rgba(184,150,90,.2);background:var(--ink3);}
+.bc:hover::after{width:100%;}
+/* Glow on hover */
+.bc::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 60% at var(--mx,50%) var(--my,50%),
+    rgba(184,150,90,.06),transparent);
+  opacity:0;transition:opacity .4s;pointer-events:none;
+}
+.bc:hover::before{opacity:1;}
+
+.bc.s7{grid-column:span 7;min-height:320px;}
+.bc.s5{grid-column:span 5;min-height:320px;}
+.bc.s4{grid-column:span 4;}
+.b-lbl{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gd);margin-bottom:17px;}
+.b-title{
+  font-family:var(--serif);
+  font-size:clamp(1.4rem,2.2vw,2rem);
+  font-weight:300;line-height:1.2;letter-spacing:-.2px;margin-bottom:12px;
+}
+.b-title em{font-style:italic;color:var(--g);}
+.b-body{font-size:.83rem;font-weight:300;color:var(--mu);line-height:1.82;}
+.b-icon{
+  position:absolute;bottom:30px;right:30px;
+  font-size:2.2rem;opacity:.1;
+  transition:opacity .35s,transform .5s var(--ease-out-expo);
+}
+.bc:hover .b-icon{opacity:.32;transform:scale(1.16) rotate(-10deg);}
+.b-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px;}
+.b-tag{
+  padding:3px 11px;
+  border:1px solid rgba(184,150,90,.13);border-radius:2px;
+  font-size:.64rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--gd);font-weight:300;
+  transition:border-color .2s,color .2s;
+}
+.b-tag:hover{border-color:var(--g);color:var(--g);}
+
+/* ═══════════════════════════════════════════════════
+   ROLES
+═══════════════════════════════════════════════════ */
+#roles{padding:0 0 160px;}
+.roles-g{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:2px;margin-top:60px;
+}
+.rc{
+  padding:72px 60px;position:relative;overflow:hidden;
+  transition:transform .4s var(--ease-out-expo);
+}
+.rc.cl{background:var(--ink2);border:1px solid rgba(184,150,90,.07);}
+.rc.lw{
+  background:linear-gradient(135deg,rgba(184,150,90,.055) 0%,var(--ink2) 55%);
+  border:1px solid rgba(184,150,90,.12);
+}
+/* Hover glow */
+.rc-glow{
+  position:absolute;inset:0;opacity:0;
+  transition:opacity .5s;pointer-events:none;
+}
+.cl .rc-glow{background:radial-gradient(ellipse 70% 60% at 20% 80%,rgba(184,150,90,.045),transparent);}
+.lw .rc-glow{background:radial-gradient(ellipse 70% 60% at 80% 20%,rgba(184,150,90,.07),transparent);}
+.rc:hover .rc-glow{opacity:1;}
+
+.r-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 13px;
+  border:1px solid rgba(184,150,90,.17);border-radius:2px;
+  font-size:.6rem;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gd);margin-bottom:38px;font-weight:300;
+}
+.r-dot{width:5px;height:5px;border-radius:50%;background:var(--g);
+  animation:dotBlink 2s ease-in-out infinite alternate;}
+@keyframes dotBlink{0%{opacity:.5;}100%{opacity:1;box-shadow:0 0 4px var(--g);}}
+
+.r-title{
+  font-family:var(--serif);font-size:clamp(2rem,3vw,2.9rem);
+  font-weight:300;line-height:1.1;letter-spacing:-.3px;margin-bottom:17px;
+}
+.r-title em{font-style:italic;}
+.r-desc{
+  font-size:.86rem;font-weight:300;line-height:1.9;
+  color:rgba(246,241,233,.4);margin-bottom:40px;max-width:340px;
+}
+.r-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:48px;}
+.r-list li{
+  display:flex;align-items:center;gap:13px;
+  font-size:.82rem;font-weight:300;color:rgba(246,241,233,.48);
+  transition:color .2s,transform .2s;
+}
+.r-list li:hover{color:var(--p);transform:translateX(4px);}
+.r-chk{
+  width:17px;height:17px;
+  border:1px solid rgba(184,150,90,.2);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.55rem;color:var(--g);flex-shrink:0;
+  transition:border-color .2s,background .2s;
+}
+.r-list li:hover .r-chk{border-color:var(--g);background:rgba(184,150,90,.07);}
+
+/* Wipe button */
+.btn-wipe{
+  position:relative;overflow:hidden;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 36px;border-radius:2px;
+  font-family:var(--sans);font-size:.76rem;font-weight:400;
+  letter-spacing:1.5px;text-transform:uppercase;
+  text-decoration:none;transition:color .32s;
+}
+.btn-wipe.gold{background:var(--g);color:var(--ink);border:1px solid var(--g);}
+.btn-wipe.gold::before{
+  content:'';position:absolute;inset:0;
+  background:var(--ink);transform:translateX(-101%);
+  transition:transform .42s var(--ease-in-out-circ);
+}
+.btn-wipe.gold:hover{color:var(--g);}
+.btn-wipe.gold:hover::before{transform:translateX(0);}
+.btn-wipe span,.btn-wipe .arr{position:relative;z-index:1;}
+.btn-wipe .arr{transition:transform .25s;}
+.btn-wipe:hover .arr{transform:translateX(6px);}
+.btn-wipe.outline{border:1px solid rgba(184,150,90,.18);color:rgba(246,241,233,.47);background:transparent;}
+.btn-wipe.outline:hover{border-color:var(--g);color:var(--g);}
+
+/* ═══════════════════════════════════════════════════
+   QUOTE SECTION
+═══════════════════════════════════════════════════ */
+#quote-sec{
+  padding:120px 0;
+  border-top:1px solid rgba(184,150,90,.07);
+  border-bottom:1px solid rgba(184,150,90,.07);
+  background:var(--ink2);text-align:center;
+  position:relative;overflow:hidden;
+}
+.q-glow{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 50% 50%,rgba(184,150,90,.035),transparent);
+  animation:glowPulse 6s ease-in-out infinite alternate;
+}
+.q-mark{
+  font-family:var(--serif);font-size:9rem;font-weight:300;
+  color:rgba(184,150,90,.065);line-height:.5;margin-bottom:28px;
+  position:relative;
+}
+.q-text{
+  font-family:var(--serif);
+  font-size:clamp(1.4rem,2.7vw,2.3rem);
+  font-weight:300;font-style:italic;line-height:1.55;
+  color:var(--p);max-width:760px;margin:0 auto 26px;
+  position:relative;
+}
+.q-attr{
+  font-size:.66rem;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gd);position:relative;
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════ */
+footer{
+  background:var(--ink);
+  border-top:1px solid rgba(184,150,90,.07);
+  padding:76px 60px 42px;
+}
+.ft{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:76px;
+  padding-bottom:52px;border-bottom:1px solid rgba(184,150,90,.07);
+  margin-bottom:26px;
+}
+.f-name{font-family:var(--serif);font-size:1.5rem;font-weight:300;margin-bottom:13px;}
+.f-name em{font-style:italic;color:var(--g);}
+.f-desc{font-size:.78rem;font-weight:300;color:var(--mu);line-height:1.9;max-width:265px;}
+.f-col-h{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--gd);margin-bottom:18px;}
+.f-col a{
+  display:block;font-size:.78rem;font-weight:300;
+  color:rgba(246,241,233,.24);text-decoration:none;
+  margin-bottom:9px;transition:color .2s,transform .2s;
+}
+.f-col a:hover{color:var(--p);transform:translateX(3px);}
+.f-bot{display:flex;justify-content:space-between;align-items:center;}
+.f-copy{font-size:.7rem;color:var(--di);}
+.f-disc{font-size:.68rem;color:rgba(58,53,40,.5);max-width:370px;text-align:right;}
+
+/* ═══════════════════════════════════════════════════
+   SCROLL REVEAL SYSTEM
+   Elements start invisible; JS adds .visible
+═══════════════════════════════════════════════════ */
+.reveal{
+  opacity:0;
+  transition:opacity .9s var(--ease-out-expo),
+             transform .9s var(--ease-out-expo);
+}
+.reveal.up{transform:translateY(52px);}
+.reveal.left{transform:translateX(-44px);}
+.reveal.right{transform:translateX(44px);}
+.reveal.scale{transform:scale(.93);}
+.reveal.visible{opacity:1;transform:none;}
+
+/* Stagger children */
+.stagger .reveal:nth-child(1){transition-delay:.04s;}
+.stagger .reveal:nth-child(2){transition-delay:.12s;}
+.stagger .reveal:nth-child(3){transition-delay:.2s;}
+.stagger .reveal:nth-child(4){transition-delay:.28s;}
+.stagger .reveal:nth-child(5){transition-delay:.36s;}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media(max-width:1100px){
+  #nav{padding:0 32px;}
+  .container{padding:0 32px;}
+  .v-rules{padding:0 32px;}
+  #hero{padding:130px 32px 80px;}
+  .n-links{display:none;}
+  .phil-grid{grid-template-columns:1fr;gap:52px;}
+  .roles-g{grid-template-columns:1fr;}
+  .bc.s7,.bc.s5,.bc.s4{grid-column:span 12;}
+  .ft{grid-template-columns:1fr 1fr;gap:40px;}
+  footer{padding:60px 32px 36px;}
+}
+@media(max-width:640px){
+  #nav{padding:0 20px;}
+  .container{padding:0 20px;}
+  #hero{padding:116px 20px 60px;}
+  .h-yr{display:none;}
+  .h-cta{flex-direction:column;}
+  .stat-row{flex-wrap:wrap;gap:26px;}
+  .s-hd{flex-direction:column;gap:10px;align-items:flex-start;}
+  .proc-row{grid-template-columns:46px 1fr;}.proc-ico{display:none;}
+  .rc{padding:46px 26px;}
+  footer{padding:44px 20px 28px;}
+  .ft{grid-template-columns:1fr;gap:28px;}
+  .f-bot{flex-direction:column;gap:9px;text-align:center;}
+  .f-disc{text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── CURSOR ── -->
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav id="nav">
+  <a href="#" class="n-brand">
+    <div class="n-seal">
+      <svg viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="18.7" stroke="#B8965A" stroke-width=".55" stroke-dasharray="2.5 3.2"/>
+        <circle cx="20" cy="20" r="13" stroke="#B8965A" stroke-width=".38" opacity=".38"/>
+        <path d="M20 9L22.6 16.8H30.8L24.1 21.5L26.7 29.3L20 24.6L13.3 29.3L15.9 21.5L9.2 16.8H17.4Z" fill="none" stroke="#B8965A" stroke-width=".65" stroke-linejoin="round"/>
+        <circle cx="20" cy="20" r="1.8" fill="#B8965A" opacity=".45"/>
+      </svg>
+    </div>
+    <span class="n-name">LexAid<sup>™</sup></span>
+  </a>
+
+  <ul class="n-links">
+    <li><a href="#philosophy">Philosophy</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#features">Platform</a></li>
+    <li><a href="#roles">For Lawyers</a></li>
+  </ul>
+
+  <div class="n-actions">
+    <a href="login.html" class="n-ghost">Sign In</a>
+    <a href="register.html" class="n-gold"><span>Get Started</span></a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="hero">
+  <div class="h-glow"></div>
+  <div class="h-grid"></div>
+  <div class="v-rules">
+    <div class="vr"></div><div class="vr"></div>
+    <div class="vr"></div><div class="vr"></div><div class="vr"></div>
+  </div>
+
+  <div class="orn t"><div class="ol"></div><div class="od"></div></div>
+
+  <div class="h-content">
+    <div class="h-eye"><span class="el"></span>Legal Aid Management System<span class="el"></span></div>
+    <div class="h-title-clip"><span class="h-line-1">Justice</span></div>
+    <div class="h-title-clip"><span class="h-line-2">Accessible</span></div>
+    <div class="h-hr"></div>
+    <p class="h-sub">A modern platform connecting those who seek legal counsel with verified professionals — confidentially, efficiently, and with clarity of purpose.</p>
+    <div class="h-cta">
+      <a href="register.html" class="btn-primary"><span>Request Legal Aid</span></a>
+      <a href="login.html" class="btn-outline">I Am a Lawyer</a>
+    </div>
+  </div>
+
+  <div class="orn b"><div class="od"></div><div class="ol r"></div></div>
+  <div class="h-yr">Est. MMXXVI</div>
+
+  <div class="s-ind">
+    <span class="s-lbl">Scroll</span>
+    <div class="s-track"><div class="s-fill"></div></div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ═══ -->
+<div class="mq-strip">
+  <div class="mq-track">
+    <span class="mq-item">Legal Aid<span class="mq-dot"></span></span>
+    <span class="mq-item">Criminal Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Civil Disputes<span class="mq-dot"></span></span>
+    <span class="mq-item">Family Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Corporate Matters<span class="mq-dot"></span></span>
+    <span class="mq-item">Property Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Constitutional Rights<span class="mq-dot"></span></span>
+    <span class="mq-item">Labour Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Secure · Confidential · Verified<span class="mq-dot"></span></span>
+    <span class="mq-item">Legal Aid<span class="mq-dot"></span></span>
+    <span class="mq-item">Criminal Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Civil Disputes<span class="mq-dot"></span></span>
+    <span class="mq-item">Family Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Corporate Matters<span class="mq-dot"></span></span>
+    <span class="mq-item">Property Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Constitutional Rights<span class="mq-dot"></span></span>
+    <span class="mq-item">Labour Law<span class="mq-dot"></span></span>
+    <span class="mq-item">Secure · Confidential · Verified<span class="mq-dot"></span></span>
+  </div>
+</div>
+
+<!-- ═══ PHILOSOPHY ═══ -->
+<section id="philosophy">
+  <div class="container">
+    <div class="phil-grid">
+      <div class="phil-l reveal left">
+        <div class="phil-bignum">I</div>
+        <div class="s-eye">Our philosophy</div>
+        <h2 class="phil-h">Where legal<br>complexity meets<br><em>human clarity</em></h2>
+      </div>
+      <div class="reveal right">
+        <p class="phil-p">The gap between those who need legal help and those who can provide it has never been a matter of availability — it has always been a matter of access. LexAid was built to close that gap: a structured, secure, and dignified pathway from need to counsel.</p>
+        <p class="phil-p">Built on Firebase's real-time infrastructure, every interaction is encrypted and role-gated — because legal aid is not a privilege, it is a right.</p>
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-v">Real<em>-time</em></div>
+            <div class="stat-l">Chat System</div>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <div class="stat-v">Cloud<em>-first</em></div>
+            <div class="stat-l">Architecture</div>
+          </div>
+          <div class="stat-sep"></div>
+          <div class="stat-item">
+            <div class="stat-v">Role<em>-based</em></div>
+            <div class="stat-l">Access Control</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROCESS ═══ -->
+<section id="process">
+  <div class="container">
+    <div class="s-hd reveal up">
+      <div>
+        <div class="s-eye">How It Works</div>
+        <h2 class="s-title">A deliberate<br><em>three-step process</em></h2>
+      </div>
+      <div class="s-num">02</div>
+    </div>
+    <div class="proc-list stagger">
+      <div class="proc-row reveal up">
+        <div class="proc-n">01</div>
+        <div>
+          <div class="proc-title">Register & Submit Your Case</div>
+          <div class="proc-desc">Create a verified account, describe your legal situation in detail, and submit into our secure structured intake system. Your information is encrypted and visible only to qualified professionals.</div>
+        </div>
+        <div class="proc-ico">⚖️</div>
+      </div>
+      <div class="proc-row reveal up">
+        <div class="proc-n">02</div>
+        <div>
+          <div class="proc-title">Lawyer Reviews & Accepts</div>
+          <div class="proc-desc">Verified legal professionals browse the case queue, evaluate requests against their area of expertise, and accept the cases they are best positioned to handle. Clients are notified immediately.</div>
+        </div>
+        <div class="proc-ico">📋</div>
+      </div>
+      <div class="proc-row reveal up">
+        <div class="proc-n">03</div>
+        <div>
+          <div class="proc-title">Confidential Communication Opens</div>
+          <div class="proc-desc">A private, encrypted chat channel is established between client and counsel — context-aware, case-linked, and accessible only to the two parties. Real-time sync ensures nothing is missed.</div>
+        </div>
+        <div class="proc-ico">💬</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES BENTO ═══ -->
+<section id="features">
+  <div class="container">
+    <div class="s-hd reveal up">
+      <div>
+        <div class="s-eye">Platform Capabilities</div>
+        <h2 class="s-title">Built for <em>trust</em>,<br>engineered for scale</h2>
+      </div>
+      <div class="s-num">03</div>
+    </div>
+    <div class="bento stagger">
+      <div class="bc s7 reveal up">
+        <div class="b-lbl">Authentication</div>
+        <h3 class="b-title">Firebase-backed<br><em>secure access</em></h3>
+        <p class="b-body">Role-based authentication separates client and lawyer access paths entirely. Sessions managed server-side; credentials never linger on the frontend beyond transmission.</p>
+        <div class="b-tags"><span class="b-tag">Firebase Auth</span><span class="b-tag">Role Gates</span><span class="b-tag">Session Tokens</span></div>
+        <div class="b-icon">🔐</div>
+      </div>
+      <div class="bc s5 reveal up">
+        <div class="b-lbl">Real-Time Data</div>
+        <h3 class="b-title">Firestore<br><em>live sync</em></h3>
+        <p class="b-body">Every status change, message, and case update propagates instantly via Firestore's onSnapshot listeners — no polling, no stale state, ever.</p>
+        <div class="b-icon">⚡</div>
+      </div>
+      <div class="bc s4 reveal up">
+        <div class="b-lbl">Case Management</div>
+        <h3 class="b-title">Full <em>lifecycle</em><br>tracking</h3>
+        <p class="b-body">Pending → Accepted → Active → Resolved. Every stage timestamped and role-visible.</p>
+        <div class="b-icon">📁</div>
+      </div>
+      <div class="bc s4 reveal up">
+        <div class="b-lbl">Communication</div>
+        <h3 class="b-title">Context-aware<br><em>chat system</em></h3>
+        <p class="b-body">Each chat is linked to a request ID — case context preserved in every message as a Firestore subcollection.</p>
+        <div class="b-icon">💬</div>
+      </div>
+      <div class="bc s4 reveal up">
+        <div class="b-lbl">Infrastructure</div>
+        <h3 class="b-title">Cloud-first,<br><em>zero-server</em></h3>
+        <p class="b-body">Entirely serverless. Firebase Hosting + Firestore + Auth. Deployable in minutes, scalable by design.</p>
+        <div class="b-icon">☁️</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ROLES ═══ -->
+<section id="roles">
+  <div class="container">
+    <div class="s-hd reveal up">
+      <div>
+        <div class="s-eye">Who It's For</div>
+        <h2 class="s-title">Two sides of<br><em>every case</em></h2>
+      </div>
+      <div class="s-num">04</div>
+    </div>
+    <div class="roles-g">
+      <div class="rc cl reveal left">
+        <div class="rc-glow"></div>
+        <div class="r-badge"><span class="r-dot"></span>Client</div>
+        <h3 class="r-title">Seek legal<br><em>assistance</em></h3>
+        <p class="r-desc">For individuals navigating complex legal situations without the means or knowledge to find proper representation.</p>
+        <ul class="r-list">
+          <li><span class="r-chk">✓</span>Submit detailed aid requests</li>
+          <li><span class="r-chk">✓</span>Track case status in real time</li>
+          <li><span class="r-chk">✓</span>Communicate directly with counsel</li>
+          <li><span class="r-chk">✓</span>Complete confidentiality guaranteed</li>
+        </ul>
+        <a href="register.html" class="btn-wipe gold">
+          <span>Begin Your Request</span><span class="arr">→</span>
+        </a>
+      </div>
+      <div class="rc lw reveal right">
+        <div class="rc-glow"></div>
+        <div class="r-badge"><span class="r-dot"></span>Legal Professional</div>
+        <h3 class="r-title">Build your<br><em>practice</em></h3>
+        <p class="r-desc">For verified lawyers — from seasoned practitioners to recent graduates — seeking to grow their caseload and make a meaningful impact.</p>
+        <ul class="r-list">
+          <li><span class="r-chk">✓</span>Browse structured case requests</li>
+          <li><span class="r-chk">✓</span>Accept by area of expertise</li>
+          <li><span class="r-chk">✓</span>Manage multiple clients efficiently</li>
+          <li><span class="r-chk">✓</span>Dedicated per-case communication</li>
+        </ul>
+        <a href="register.html" class="btn-wipe outline">
+          <span>Register as Counsel</span><span class="arr">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ QUOTE ═══ -->
+<section id="quote-sec">
+  <div class="q-glow"></div>
+  <div class="container" style="position:relative;">
+    <div class="q-mark reveal scale">"</div>
+    <blockquote class="q-text reveal up">
+      The first duty of a society is justice. Access to counsel is not a luxury of the privileged — it is the cornerstone of a functioning rule of law.
+    </blockquote>
+    <p class="q-attr reveal up">Academic Prototype · JIIT Software Engineering · 2026</p>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="ft">
+    <div>
+      <div class="f-name">Lex<em>Aid</em>™</div>
+      <p class="f-desc">A web-based Legal Aid Management System bridging clients and verified legal professionals through a secure, real-time platform. Academic prototype built at JIIT.</p>
+    </div>
+    <div class="f-col">
+      <div class="f-col-h">Platform</div>
+      <a href="login.html">Sign In</a>
+      <a href="register.html">Register</a>
+      <a href="#process">How It Works</a>
+      <a href="#features">Features</a>
+    </div>
+    <div class="f-col">
+      <div class="f-col-h">Practice Areas</div>
+      <a href="#">Criminal Law</a><a href="#">Civil Disputes</a>
+      <a href="#">Family Law</a><a href="#">Corporate Law</a>
+      <a href="#">Property Law</a>
+    </div>
+    <div class="f-col">
+      <div class="f-col-h">Legal</div>
+      <a href="#">Privacy Policy</a><a href="#">Terms of Service</a>
+      <a href="#">Disclaimer</a><a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="f-bot">
+    <p class="f-copy">© MMXXVI LexAid · Academic Software Engineering · JIIT</p>
+    <p class="f-disc">Academic prototype. Not a substitute for professional legal advice.</p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     ZERO-DEPENDENCY MOTION ENGINE
+     Pure vanilla JS — works everywhere, no CDN needed
+═══════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+
+  /* ── 1. CUSTOM CURSOR ── */
+  const dot  = document.getElementById('cur-dot');
+  const ring = document.getElementById('cur-ring');
+  let mx=0, my=0, rx=0, ry=0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    dot.style.left  = mx + 'px';
+    dot.style.top   = my + 'px';
+  });
+
+  // Ring follows with lag
+  function ringLoop() {
+    rx += (mx - rx) * 0.095;
+    ry += (my - ry) * 0.095;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(ringLoop);
+  }
+  ringLoop();
+
+  // Hover state
+  document.querySelectorAll('a, button, .proc-row, .bc, .rc, .mq-item').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cur-link'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cur-link'));
+  });
+
+  /* ── 2. NAV SCROLL CLASS ── */
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  }, { passive: true });
+
+  /* ── 3. SCROLL REVEAL — IntersectionObserver ── */
+  const revealEls = document.querySelectorAll('.reveal');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, idx) => {
+      if (entry.isIntersecting) {
+        // Stagger siblings inside .stagger parents
+        const parent = entry.target.closest('.stagger');
+        let delay = 0;
+        if (parent) {
+          const siblings = Array.from(parent.querySelectorAll('.reveal'));
+          delay = siblings.indexOf(entry.target) * 80;
+        }
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, delay);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  revealEls.forEach(el => observer.observe(el));
+
+  /* ── 4. STAT SEPARATORS — draw when visible ── */
+  const sepObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const seps = entry.target.querySelectorAll('.stat-sep');
+        seps.forEach((s, i) => {
+          setTimeout(() => s.classList.add('visible'), i * 180);
+        });
+        sepObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.4 });
+
+  const statRow = document.querySelector('.stat-row');
+  if (statRow) sepObs.observe(statRow);
+
+  /* ── 5. BENTO CARD — mouse-follow radial glow ── */
+  document.querySelectorAll('.bc').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
+      const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+      card.style.setProperty('--mx', x);
+      card.style.setProperty('--my', y);
+    });
+  });
+
+  /* ── 6. PARALLAX HERO GLOW — rAF scroll ── */
+  const glow = document.querySelector('.h-glow');
+  let lastScroll = 0;
+  function parallaxLoop() {
+    const s = window.scrollY;
+    if (s !== lastScroll && glow) {
+      glow.style.transform = `translateY(${s * 0.22}px) scale(1.05)`;
+      lastScroll = s;
+    }
+    requestAnimationFrame(parallaxLoop);
+  }
+  parallaxLoop();
+
+  /* ── 7. SMOOTH ANCHOR SCROLL ── */
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      const target = document.querySelector(link.getAttribute('href'));
+      if (!target) return;
+      e.preventDefault();
+      // Custom smooth scroll with easing
+      const start  = window.scrollY;
+      const end    = target.getBoundingClientRect().top + start - 72;
+      const dur    = 900;
+      let startT   = null;
+
+      function easeInOutExpo(t) {
+        return t === 0 ? 0 : t === 1 ? 1
+          : t < 0.5 ? Math.pow(2, 20*t - 10) / 2
+          : (2 - Math.pow(2, -20*t + 10)) / 2;
+      }
+
+      function step(ts) {
+        if (!startT) startT = ts;
+        const progress = Math.min((ts - startT) / dur, 1);
+        window.scrollTo(0, start + (end - start) * easeInOutExpo(progress));
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  });
+
+  /* ── 8. PROCESS ROW ENTRANCE from left ── */
+  const procObs = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.style.opacity  = '1';
+          entry.target.style.transform = 'none';
+        }, i * 100);
+        procObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.proc-row').forEach((row, i) => {
+    row.style.opacity   = '0';
+    row.style.transform = 'translateX(-32px)';
+    row.style.transition = `opacity .8s ${i*0.1}s cubic-bezier(0.16,1,0.3,1), transform .8s ${i*0.1}s cubic-bezier(0.16,1,0.3,1)`;
+    procObs.observe(row);
+  });
+
+  /* ── 9. TITLE LETTER SHIMMER on hover ── */
+  // Wrap each char in .h-line-1 and .h-line-2 for individual hover shimmer
+  ['.h-line-1', '.h-line-2'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    const text = el.textContent;
+    el.innerHTML = text.split('').map((ch, i) =>
+      ch === ' ' ? ' ' :
+      `<span style="display:inline-block;transition:transform .4s ${i*28}ms cubic-bezier(0.16,1,0.3,1),color .3s ${i*20}ms">${ch}</span>`
+    ).join('');
+    el.parentElement.addEventListener('mouseenter', () => {
+      el.querySelectorAll('span').forEach(s => {
+        s.style.transform = 'translateY(-6px)';
+        if (sel === '.h-line-2') s.style.color = '#D4AF6E';
+      });
+    });
+    el.parentElement.addEventListener('mouseleave', () => {
+      el.querySelectorAll('span').forEach(s => {
+        s.style.transform = '';
+        s.style.color = '';
+      });
+    });
+  });
+
+  /* ── 10. COUNTER ANIMATION for stats ── */
+  // (Stats are text-based, so we skip numeric counter here
+  //  as values are "Real-time", "Cloud-first", "Role-based")
+
+  /* ── DONE ── */
+  console.log('[LexAid] Motion engine initialised — zero dependencies.');
+
+})();
+</script>
+</body>
+</html>

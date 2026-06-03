@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Register — LexAid</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --ink: #0A0906;
+            --ink2: #111009;
+            --ink3: #1A1814;
+            --ink4: #272420;
+            --p: #F5F0E8;
+            --g: #B8965A;
+            --gl: #D4AF6E;
+            --gd: #7A6038;
+            --mu: #6B6355;
+            --di: #3A3528;
+            --ok: #5C9E72;
+            --warn: #C4873A;
+            --err: #B85050;
+            --serif: 'Cormorant Garamond', Georgia, serif;
+            --sans: 'Outfit', sans-serif;
+        }
+
+        /* --- Reset --- */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html { font-size: 16px; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--ink);
+            color: var(--p);
+            overflow-x: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 100vh;
+            cursor: none;
+        }
+
+        /* Grainy Overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 9997;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+            opacity: .42;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor { position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; }
+        #cd { width: 7px; height: 7px; border-radius: 50%; background: #D4AF6E; position: absolute; transform: translate(-50%, -50%); }
+        #cr { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(184, 150, 90, .42); position: absolute; transform: translate(-50%, -50%); transition: width .35s, height .35s; }
+        body.hov #cr { width: 52px; height: 52px; }
+
+        /* --- Left Side Panel --- */
+        .lpanel {
+            position: relative;
+            background: linear-gradient(160deg, #0c0b07 0%, #0f0e09 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 44px;
+            overflow: hidden;
+            border-right: 1px solid rgba(184, 150, 90, .08);
+        }
+
+        .lpanel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(184, 150, 90, .022) 1px, transparent 1px), linear-gradient(90deg, rgba(184, 150, 90, .022) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        .lp-logo { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .lp-seal { width: 32px; height: 32px; }
+        .lp-name { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; color: var(--p); }
+        .lp-name sup { font-family: var(--sans); font-size: .48rem; letter-spacing: 2px; color: var(--g); vertical-align: super; }
+
+        .lp-mid { position: relative; z-index: 1; }
+        .lp-quote { font-family: var(--serif); font-size: clamp(1.7rem, 2.3vw, 2.5rem); font-weight: 300; line-height: 1.2; margin-bottom: 16px; }
+        .lp-quote em { font-style: italic; color: var(--g); }
+        .lp-sub { font-size: .86rem; font-weight: 300; color: var(--mu); line-height: 1.8; max-width: 300px; }
+
+        .lp-feats { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 28px; }
+        .lp-feats li { display: flex; align-items: center; gap: 12px; font-size: .8rem; font-weight: 300; color: var(--mu); }
+        .lf-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--g); flex-shrink: 0; }
+        .lp-foot { position: relative; z-index: 1; font-size: .7rem; color: var(--di); }
+
+        /* --- Right Side (Form) --- */
+        .rpanel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px 40px; background: var(--ink2); overflow-y: auto; }
+        .fwrap { width: 100%; max-width: 400px; }
+        .fhead { margin-bottom: 32px; }
+        .feye { font-size: .6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gd); margin-bottom: 7px; }
+        .ftitle { font-family: var(--serif); font-size: 1.9rem; font-weight: 300; margin-bottom: 5px; }
+        .fsub { font-size: .82rem; color: var(--mu); }
+        .fsub a { color: var(--g); text-decoration: none; }
+        .fsub a:hover { text-decoration: underline; }
+
+        /* Alerts */
+        .alert { padding: 10px 13px; border-radius: 2px; font-size: .8rem; margin-bottom: 13px; display: none; align-items: center; gap: 9px; border-left: 2px solid; }
+        .alert.show { display: flex; animation: aIn .25s ease; }
+        @keyframes aIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .aerr { background: rgba(184, 80, 80, .06); border-color: var(--err); color: var(--err); }
+        .aok { background: rgba(92, 158, 114, .07); border-color: var(--ok); color: var(--ok); }
+
+        /* Role Selector */
+        .role-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 18px; }
+        .rtog { padding: 11px; background: var(--ink3); border: 1px solid rgba(184, 150, 90, .08); border-radius: 2px; color: var(--mu); font-family: var(--sans); font-size: .78rem; letter-spacing: .8px; text-transform: uppercase; cursor: none; transition: all .25s; text-align: center; }
+        .rtog.active { background: rgba(184, 150, 90, .1); border-color: var(--g); color: var(--g); }
+
+        /* Inputs */
+        .fg { margin-bottom: 16px; }
+        .flbl { display: block; font-size: .68rem; font-weight: 500; color: var(--mu); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 6px; }
+        .fiw { position: relative; }
+        .fico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: .82rem; opacity: .28; pointer-events: none; }
+        .finp, .fselect, .ftextarea { width: 100%; padding: 11px 12px; background: var(--ink3); border: 1px solid rgba(184, 150, 90, .1); border-radius: 2px; color: var(--p); font-family: var(--sans); font-size: .86rem; transition: all .2s; }
+        .finp { padding-left: 36px; }
+        .finp:focus, .fselect:focus, .ftextarea:focus { outline: none; border-color: rgba(184, 150, 90, .38); box-shadow: 0 0 0 3px rgba(184, 150, 90, .05); background: var(--ink4); }
+
+        .lawyer-fields { display: none; }
+        .lawyer-fields.show { display: block; animation: aIn .3s ease; }
+
+        .bsub { width: 100%; padding: 13px; background: var(--g); border: none; border-radius: 2px; color: var(--ink); font-family: var(--sans); font-size: .8rem; font-weight: 500; letter-spacing: 1.3px; text-transform: uppercase; cursor: none; transition: all .25s; margin-top: 4px; }
+        .bsub:hover:not(:disabled) { background: var(--gl); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(184, 150, 90, .28); }
+        .bsub:disabled { opacity: .45; cursor: not-allowed; }
+
+        .fdiv { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+        .fdiv::before, .fdiv::after { content: ''; flex: 1; height: 1px; background: rgba(184, 150, 90, .09); }
+        .fdiv span { font-size: .68rem; color: var(--di); }
+
+        .backhome { display: block; text-align: center; font-size: .76rem; color: var(--mu); text-decoration: none; transition: color .2s; }
+        .backhome:hover { color: var(--p); }
+
+        @media (hover: none) { body { cursor: auto; } #cursor { display: none; } }
+
+        @media(max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+            .lpanel { display: none; }
+            .rpanel { padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor">
+        <div id="cd"></div>
+        <div id="cr"></div>
+    </div>
+
+    <div class="lpanel">
+        <a href="final_index.html" class="lp-logo">
+            <div class="lp-seal">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18.7" stroke="#B8965A" stroke-width=".5" stroke-dasharray="2.5 3" />
+                    <circle cx="20" cy="20" r="13" stroke="#B8965A" stroke-width=".35" opacity=".4" />
+                    <path d="M20 9L22.6 16.8H30.8L24.1 21.5L26.7 29.3L20 24.6L13.3 29.3L15.9 21.5L9.2 16.8H17.4Z" fill="none" stroke="#B8965A" stroke-width=".6" stroke-linejoin="round" />
+                    <circle cx="20" cy="20" r="1.8" fill="#B8965A" opacity=".45" />
+                </svg>
+            </div>
+            <span class="lp-name">LexAid<sup>™</sup></span>
+        </a>
+        <div class="lp-mid">
+            <h2 class="lp-quote">Justice begins<br>with a single<br><em>first step.</em></h2>
+            <p class="lp-sub">Join a platform that brings together those who need legal help and those qualified to provide it — securely and confidentially.</p>
+            <ul class="lp-feats">
+                <li><span class="lf-dot"></span>Submit aid requests instantly</li>
+                <li><span class="lf-dot"></span>Get matched with verified lawyers</li>
+                <li><span class="lf-dot"></span>Communicate via encrypted chat</li>
+                <li><span class="lf-dot"></span>Track your case at every stage</li>
+            </ul>
+        </div>
+        <div class="lp-foot">Academic Project · JIIT Software Engineering 2026</div>
+    </div>
+
+    <div class="rpanel">
+        <div class="fwrap">
+            <div class="fhead">
+                <div class="feye">Create account</div>
+                <h1 class="ftitle">Join LexAid</h1>
+                <p class="fsub">Already registered? <a href="login.html">Sign in here</a></p>
+            </div>
+
+            <div class="alert aerr" id="errAlert"></div>
+            <div class="alert aok" id="okAlert"></div>
+
+            <div class="fg">
+                <label class="flbl">I am a</label>
+                <div class="role-toggle">
+                    <button type="button" class="rtog active" id="clientBtn" onclick="setRole('client')">⚖️ Client</button>
+                    <button type="button" class="rtog" id="lawyerBtn" onclick="setRole('lawyer')">👔 Lawyer</button>
+                </div>
+            </div>
+
+            <form id="regForm">
+                <div class="fg">
+                    <label class="flbl">Full Name</label>
+                    <div class="fiw"><span class="fico">👤</span><input type="text" id="fullName" class="finp" placeholder="Your full name" required></div>
+                </div>
+                <div class="fg">
+                    <label class="flbl">Phone Number</label>
+                    <div class="fiw"><span class="fico">📞</span><input type="tel" id="phone" class="finp" placeholder="+91 XXXXX XXXXX" required></div>
+                </div>
+                <div class="fg">
+                    <label class="flbl">Email Address</label>
+                    <div class="fiw"><span class="fico">✉</span><input type="email" id="email" class="finp" placeholder="you@example.com" required></div>
+                </div>
+                <div class="fg">
+                    <label class="flbl">Password</label>
+                    <div class="fiw"><span class="fico">🔒</span><input type="password" id="password" class="finp" placeholder="Min. 6 characters" required></div>
+                </div>
+
+                <div class="lawyer-fields" id="lawyerFields">
+                    <div class="fg">
+                        <label class="flbl">Specialization</label>
+                        <select id="spec" class="fselect">
+                            <option value="">Select area of practice</option>
+                            <option>Criminal Law</option>
+                            <option>Civil Law</option>
+                            <option>Family Law</option>
+                            <option>Corporate Law</option>
+                            <option>Property Law</option>
+                            <option>Labour Law</option>
+                            <option>Constitutional Law</option>
+                            <option>General Practice</option>
+                        </select>
+                    </div>
+                    <div class="fg">
+                        <label class="flbl">Bar Council ID <span style="font-size:.58rem;color:var(--di);letter-spacing:.5px;text-transform:none;font-weight:300;">(optional)</span></label>
+                        <div class="fiw"><span class="fico">🏛</span><input type="text" id="barId" class="finp" placeholder="Your registration ID (optional)"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="bsub" id="submitBtn">Create Account</button>
+            </form>
+
+            <div class="fdiv"><span>or</span></div>
+            <a href="final_index.html" class="backhome">← Back to Home</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCE7M7gRFIAXDcSY6ZJ_8on9VEoZFqIK6c",
+            authDomain: "legal-aid-system.firebaseapp.com",
+            projectId: "legal-aid-system",
+            storageBucket: "legal-aid-system.firebasestorage.app",
+            messagingSenderId: "899184926650",
+            appId: "1:899184926650:web:04c691c105e12afcd40783"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let role = 'client';
+
+        window.setRole = function(r) {
+            role = r;
+            document.getElementById('clientBtn').classList.toggle('active', r === 'client');
+            document.getElementById('lawyerBtn').classList.toggle('active', r === 'lawyer');
+            document.getElementById('lawyerFields').classList.toggle('show', r === 'lawyer');
+        };
+
+        const errA = document.getElementById('errAlert'), okA = document.getElementById('okAlert'), btn = document.getElementById('submitBtn');
+
+        function showErr(m) { errA.textContent = '⚠ ' + m; errA.classList.add('show'); okA.classList.remove('show'); }
+
+        document.getElementById('regForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const fullName = document.getElementById('fullName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!phone) { showErr('Phone number is required.'); return; }
+            if (password.length < 6) { showErr('Password must be at least 6 characters.'); return; }
+            // Bar Council ID is optional for lawyers
+
+            btn.disabled = true;
+            btn.textContent = 'Creating account…';
+            errA.classList.remove('show');
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                const data = { fullName, email, phone, role, createdAt: serverTimestamp() };
+
+                if (role === 'lawyer') {
+                    data.specialization = document.getElementById('spec').value || 'General Practice';
+                    data.barCouncilId = document.getElementById('barId').value.trim();
+                }
+
+                await setDoc(doc(db, 'users', cred.user.uid), data);
+
+                sessionStorage.setItem('userRole', role);
+                sessionStorage.setItem('userId', cred.user.uid);
+                sessionStorage.setItem('userName', fullName);
+
+                okA.textContent = '✓ Account created — redirecting…';
+                okA.classList.add('show');
+
+                setTimeout(() => {
+                    window.location.href = (role === 'client') ? 'client-dashboard.html' : 'lawyer-dashboard.html';
+                }, 1100);
+            } catch (err) {
+                const m = {
+                    'auth/email-already-in-use': 'Email is already registered.',
+                    'auth/weak-password': 'Password is too weak.',
+                    'auth/invalid-email': 'Invalid email address.'
+                };
+                showErr(m[err.code] || err.message);
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        });
+
+        // Smooth Cursor FX
+        const cd = document.getElementById('cd'), cr = document.getElementById('cr');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+        window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+        (function loop() {
+            rx += (mx - rx) * .11; ry += (my - ry) * .11;
+            cd.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+            cr.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+            requestAnimationFrame(loop);
+        })();
+
+        document.querySelectorAll('a,button,input,select').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hov'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hov'));
+        });
+    </script>
+</body>
+</html>

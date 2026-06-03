@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Case Queue — LexAid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --ink: #0A0906; --ink2: #111009; --ink3: #1A1814; --ink4: #272420;
+            --p: #F5F0E8; --g: #B8965A; --gl: #D4AF6E; --gd: #7A6038;
+            --mu: #6B6355; --di: #3A3528; --ok: #5C9E72; --warn: #C4873A; --err: #B85050;
+            --serif: 'Cormorant Garamond', Georgia, serif;
+            --sans: 'Outfit', sans-serif;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; }
+        body { font-family: var(--sans); background: var(--ink); color: var(--p); overflow-x: hidden; cursor: none; }
+        body::after { content: ''; position: fixed; inset: 0; z-index: 9997; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E"); opacity: .4; }
+
+        #cursor { position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; }
+        #cd { width: 7px; height: 7px; border-radius: 50%; background: #D4AF6E; position: absolute; transform: translate(-50%,-50%); }
+        #cr { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(184,150,90,.42); position: absolute; transform: translate(-50%,-50%); transition: width .35s, height .35s; }
+        body.hov #cr { width: 52px; height: 52px; }
+
+        #nav { position: fixed; top: 0; left: 0; right: 0; z-index: 500; padding: 0 28px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(10,9,6,.94); backdrop-filter: blur(22px); border-bottom: 1px solid rgba(184,150,90,.1); }
+        .nbrand { display: flex; align-items: center; gap: 9px; text-decoration: none; }
+        .nseal { width: 28px; height: 28px; } .nseal svg { width: 100%; height: 100%; }
+        .nname { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; color: var(--p); }
+        .nname sup { font-family: var(--sans); font-size: .45rem; letter-spacing: 2px; color: var(--g); vertical-align: super; }
+        .nright { display: flex; align-items: center; gap: 10px; }
+        .uchip { display: flex; align-items: center; gap: 7px; padding: 5px 12px; background: rgba(184,150,90,.06); border: 1px solid rgba(184,150,90,.13); border-radius: 2px; font-size: .7rem; color: var(--g); }
+        .udot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+        .ndanger { padding: 7px 16px; border: none; color: rgba(184,80,80,.55); background: transparent; font-family: var(--sans); font-size: .68rem; letter-spacing: 1px; text-transform: uppercase; cursor: none; transition: color .2s; }
+        .ndanger:hover { color: var(--err); }
+
+        .dbody { margin-top: 64px; display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 64px); }
+
+        /* Sidebar */
+        .sidebar { background: var(--ink2); border-right: 1px solid rgba(184,150,90,.08); padding: 28px 20px;
+            position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; }
+        .sb-label { font-size: .58rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gd); margin-bottom: 10px; margin-top: 22px; }
+        .sb-label:first-child { margin-top: 0; }
+        .sb-filter { width: 100%; padding: 10px 14px; background: transparent; border: 1px solid rgba(184,150,90,.06);
+            border-radius: 2px; color: var(--mu); font-family: var(--sans); font-size: .77rem; text-align: left;
+            cursor: none; transition: all .2s; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
+        .sb-filter:hover { background: rgba(184,150,90,.04); color: var(--p); border-color: rgba(184,150,90,.15); }
+        .sb-filter.active { background: rgba(184,150,90,.08); border-color: rgba(184,150,90,.2); color: var(--g); }
+        .sf-badge { background: rgba(184,150,90,.12); color: var(--g); font-size: .62rem; padding: 1px 6px; border-radius: 10px; }
+        .sb-divider { height: 1px; background: rgba(184,150,90,.07); margin: 18px 0; }
+        .sb-stat { padding: 14px; background: var(--ink3); border: 1px solid rgba(184,150,90,.07); border-radius: 2px; margin-bottom: 2px; }
+        .sb-stat-v { font-family: var(--serif); font-size: 1.9rem; font-weight: 300; color: var(--p); line-height: 1; margin-bottom: 2px; }
+        .sb-stat-l { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--mu); }
+
+        /* Main */
+        .main { padding: 32px 36px; overflow-y: auto; }
+        .page-head { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid rgba(184,150,90,.08); }
+        .page-eye { font-size: .6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gd); margin-bottom: 5px; }
+        .page-title { font-family: var(--serif); font-size: clamp(1.6rem,2.3vw,2.2rem); font-weight: 300; line-height: 1.1; }
+        .page-title em { font-style: italic; color: var(--g); }
+
+        /* Sort/Search bar */
+        .search-sort-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+        .search-bar { flex: 1; min-width: 180px; position: relative; }
+        .search-ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: .8rem; opacity: .22; pointer-events: none; }
+        .search-input { width: 100%; padding: 9px 11px 9px 32px; background: var(--ink2); border: 1px solid rgba(184,150,90,.08);
+            border-radius: 2px; color: var(--p); font-family: var(--sans); font-size: .84rem; transition: all .2s; }
+        .search-input:focus { outline: none; border-color: rgba(184,150,90,.28); background: var(--ink3); }
+        .sort-select { padding: 9px 11px; background: var(--ink2); border: 1px solid rgba(184,150,90,.08); border-radius: 2px;
+            color: var(--mu); font-family: var(--sans); font-size: .75rem; cursor: none; }
+        .sort-select:focus { outline: none; border-color: rgba(184,150,90,.3); }
+
+        /* Cards */
+        .req-card { background: var(--ink2); border: 1px solid rgba(184,150,90,.07); border-radius: 2px;
+            padding: 20px 22px; margin-bottom: 2px; position: relative; overflow: hidden; transition: all .25s; }
+        .req-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            transform: scaleY(0); transform-origin: bottom; transition: transform .35s; }
+        .req-card:hover { border-color: rgba(184,150,90,.18); background: var(--ink3); }
+        .req-card:hover::before { transform: scaleY(1); }
+        .req-card.s-pending::before { background: var(--warn); }
+        .req-card.s-accepted::before { background: var(--ok); }
+        .req-card.s-closed::before { background: var(--di); }
+        .req-card.s-rejected::before { background: var(--err); }
+
+        .rc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; gap: 12px; }
+        .rc-title-row { display: flex; align-items: center; gap: 9px; }
+        .rc-title { font-family: var(--serif); font-size: 1.05rem; font-weight: 400; line-height: 1.2; }
+
+        /* Pulse dot for accepted/in-progress */
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0;
+            animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(92,158,114,.6); }
+            50% { box-shadow: 0 0 0 6px rgba(92,158,114,0); }
+        }
+
+        .badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+        .badge { padding: 2px 8px; border-radius: 1px; font-size: .6rem; letter-spacing: 1px; text-transform: uppercase; }
+        .badge-pending  { background: rgba(196,135,58,.1); color: var(--warn); border: 1px solid rgba(196,135,58,.18); }
+        .badge-accepted { background: rgba(92,158,114,.1); color: var(--ok); border: 1px solid rgba(92,158,114,.18); }
+        .badge-rejected { background: rgba(184,80,80,.1); color: var(--err); border: 1px solid rgba(184,80,80,.18); }
+        .badge-closed   { background: rgba(58,53,40,.5); color: var(--mu); border: 1px solid rgba(184,150,90,.1); }
+        .badge-type     { background: rgba(184,150,90,.07); color: var(--gd); border: 1px solid rgba(184,150,90,.13); }
+
+        .rc-client { font-size: .74rem; color: var(--gd); margin-bottom: 6px; }
+        .rc-desc { font-size: .81rem; color: var(--mu); line-height: 1.7; margin-bottom: 10px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .rc-footer { display: flex; align-items: center; justify-content: space-between; }
+        .rc-date { font-size: .68rem; color: var(--di); }
+        .rc-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+        .btn-sm { padding: 6px 13px; border-radius: 2px; font-family: var(--sans); font-size: .63rem; letter-spacing: 1px; text-transform: uppercase; cursor: none; transition: all .2s; border: 1px solid transparent; }
+        .btn-accept  { background: rgba(92,158,114,.1); color: var(--ok); border-color: rgba(92,158,114,.2); }
+        .btn-accept:hover  { background: rgba(92,158,114,.2); }
+        .btn-reject  { background: transparent; color: var(--err); border-color: rgba(184,80,80,.2); }
+        .btn-reject:hover  { background: rgba(184,80,80,.06); }
+        .btn-chat    { background: var(--g); color: var(--ink); border-color: var(--g); }
+        .btn-chat:hover    { background: var(--gl); }
+        .btn-close   { background: transparent; color: var(--ok); border-color: rgba(92,158,114,.25); }
+        .btn-close:hover   { background: rgba(92,158,114,.08); }
+        .btn-leave   { background: transparent; color: var(--mu); border-color: rgba(184,150,90,.18); }
+        .btn-leave:hover   { color: var(--p); border-color: rgba(184,150,90,.38); }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--di); font-size: .9rem; }
+        .ru { opacity: 0; transform: translateY(28px); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(10,9,6,.86); z-index: 2000;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-overlay.open { display: flex; animation: mIn .2s ease; }
+        @keyframes mIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal { background: var(--ink2); border: 1px solid rgba(184,150,90,.18); border-radius: 2px; padding: 34px; max-width: 420px; width: 90%; }
+        .modal-title { font-family: var(--serif); font-size: 1.4rem; font-weight: 300; margin-bottom: 10px; }
+        .modal-body  { font-size: .84rem; color: var(--mu); line-height: 1.75; margin-bottom: 26px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-modal-cancel  { padding: 8px 16px; background: transparent; border: 1px solid rgba(184,150,90,.18); border-radius: 2px; color: var(--mu); font-family: var(--sans); font-size: .7rem; letter-spacing: 1px; text-transform: uppercase; cursor: none; transition: all .2s; }
+        .btn-modal-cancel:hover { color: var(--p); }
+        .btn-modal-confirm { padding: 8px 16px; background: var(--g); border: none; border-radius: 2px; color: var(--ink); font-family: var(--sans); font-size: .7rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; cursor: none; transition: background .2s; }
+        .btn-modal-confirm:hover { background: var(--gl); }
+        .btn-modal-danger  { padding: 8px 16px; background: transparent; border: 1px solid rgba(184,80,80,.25); border-radius: 2px; color: var(--err); font-family: var(--sans); font-size: .7rem; letter-spacing: 1px; text-transform: uppercase; cursor: none; transition: all .2s; }
+        .btn-modal-danger:hover { background: rgba(184,80,80,.08); }
+
+        @keyframes aIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+        @media (hover: none) { body { cursor: auto; } #cursor { display: none; } }
+        @media(max-width: 900px) {
+            .dbody { grid-template-columns: 1fr; }
+            .sidebar { position: static; height: auto; }
+            .main { padding: 20px 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor"><div id="cd"></div><div id="cr"></div></div>
+
+    <nav id="nav">
+        <a href="final_index.html" class="nbrand">
+            <div class="nseal">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18.7" stroke="#B8965A" stroke-width=".5" stroke-dasharray="2.5 3"/>
+                    <circle cx="20" cy="20" r="13" stroke="#B8965A" stroke-width=".35" opacity=".4"/>
+                    <path d="M20 9L22.6 16.8H30.8L24.1 21.5L26.7 29.3L20 24.6L13.3 29.3L15.9 21.5L9.2 16.8H17.4Z" fill="none" stroke="#B8965A" stroke-width=".6" stroke-linejoin="round"/>
+                    <circle cx="20" cy="20" r="1.8" fill="#B8965A" opacity=".45"/>
+                </svg>
+            </div>
+            <span class="nname">LexAid<sup>™</sup></span>
+        </a>
+        <div class="nright">
+            <div class="uchip"><span class="udot"></span><span id="userName">Lawyer</span></div>
+            <a href="profile.html" style="padding:6px 14px;border:1px solid rgba(184,150,90,.18);border-radius:2px;color:rgba(245,240,232,.45);background:transparent;font-family:var(--sans);font-size:.66rem;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;text-decoration:none;" onmouseenter="document.body.classList.add('hov')" onmouseleave="document.body.classList.remove('hov')">My Profile</a>
+            <button class="ndanger" id="logoutBtn">Sign Out</button>
+        </div>
+    </nav>
+
+    <div class="dbody">
+        <aside class="sidebar">
+            <!-- Top-level tab switcher -->
+            <div class="sb-label">View</div>
+            <button class="sb-filter active" id="tab-requests" onclick="setTab('requests')">
+                <span>⭐ My Requests</span><span class="sf-badge" id="c-targeted">0</span>
+            </button>
+            <button class="sb-filter" id="tab-open" onclick="setTab('open')">
+                <span>🌐 Open Cases</span><span class="sf-badge" id="c-open">0</span>
+            </button>
+
+            <div class="sb-divider"></div>
+
+            <!-- Sub-filters (only meaningful on My Requests tab) -->
+            <div class="sb-label" id="subfilter-label">Filter</div>
+            <button class="sb-filter active" id="f-all"      onclick="setFilter('all')">     <span>All</span>       <span class="sf-badge" id="c-all">0</span></button>
+            <button class="sb-filter"        id="f-mine"     onclick="setFilter('mine')">    <span>My Active</span> <span class="sf-badge" id="c-mine">0</span></button>
+            <button class="sb-filter"        id="f-closed"   onclick="setFilter('closed')">  <span>Closed</span>    <span class="sf-badge" id="c-closed">0</span></button>
+            <button class="sb-filter"        id="f-rejected" onclick="setFilter('rejected')"><span>Declined</span>  <span class="sf-badge" id="c-rejected">0</span></button>
+
+            <div class="sb-divider"></div>
+
+            <div class="sb-label">My Stats</div>
+            <div class="sb-stat">
+                <div class="sb-stat-v" id="acceptedCount">0</div>
+                <div class="sb-stat-l">Active Cases</div>
+            </div>
+            <div class="sb-stat">
+                <div class="sb-stat-v" id="closedCount">0</div>
+                <div class="sb-stat-l">Cases Closed</div>
+            </div>
+            <div class="sb-stat">
+                <div class="sb-stat-v" id="pendingCount">0</div>
+                <div class="sb-stat-l">Open in Queue</div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <!-- Tab header: My Requests -->
+            <div id="tab-requests-panel">
+                <div class="page-head ru">
+                    <div class="page-eye">Lawyer Dashboard</div>
+                    <h1 class="page-title">My <em>Requests</em></h1>
+                    <p style="font-size:.84rem;color:var(--mu);margin-top:6px;font-weight:300;line-height:1.6;">Cases clients have sent directly to you, plus your active and closed cases.</p>
+                </div>
+            </div>
+            <!-- Tab header: Open Cases -->
+            <div id="tab-open-panel" style="display:none;">
+                <div class="page-head ru">
+                    <div class="page-eye">Lawyer Dashboard</div>
+                    <h1 class="page-title">Open <em>Cases</em></h1>
+                    <p style="font-size:.84rem;color:var(--mu);margin-top:6px;font-weight:300;line-height:1.6;">Unassigned cases — browse freely and accept any that match your expertise.</p>
+                </div>
+            </div>
+
+            <div class="search-sort-bar">
+                <div class="search-bar">
+                    <span class="search-ico">🔍</span>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search by title, client, or type…" oninput="renderFiltered()" />
+                </div>
+                <select class="sort-select" id="sortSelect" onchange="renderFiltered()">
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="alpha-asc">A → Z</option>
+                    <option value="alpha-desc">Z → A</option>
+                    <option value="type">By Type</option>
+                    <option value="client">By Client</option>
+                </select>
+            </div>
+
+            <div id="reqList">
+                <div class="empty-state">📋<br><br>Loading cases…</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">Confirm</div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-actions">
+                <button class="btn-modal-cancel" id="modalCancel">Cancel</button>
+                <button class="btn-modal-confirm" id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, query, onSnapshot, doc, updateDoc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCE7M7gRFIAXDcSY6ZJ_8on9VEoZFqIK6c",
+            authDomain: "legal-aid-system.firebaseapp.com",
+            projectId: "legal-aid-system",
+            storageBucket: "legal-aid-system.firebasestorage.app",
+            messagingSenderId: "899184926650",
+            appId: "1:899184926650:web:04c691c105e12afcd40783"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null, lawyerName = null, allReqs = [], currentFilter = 'all', currentTab = 'requests', _tabInit = false;
+
+        // ── Tab switch ─────────────────────────────────────────────────────────
+        window.setTab = function(tab) {
+            currentTab = tab;
+            document.querySelectorAll('[id^="tab-"]').forEach(b => {
+                if (b.tagName === 'BUTTON') b.classList.remove('active');
+            });
+            document.getElementById('tab-' + tab).classList.add('active');
+            // Show/hide panel headers
+            document.getElementById('tab-requests-panel').style.display = tab === 'requests' ? 'block' : 'none';
+            document.getElementById('tab-open-panel').style.display = tab === 'open' ? 'block' : 'none';
+            // Reset sub-filter to 'all' when switching tabs
+            currentFilter = 'all';
+            document.querySelectorAll('.sb-filter[id^="f-"]').forEach(b => b.classList.remove('active'));
+            document.getElementById('f-all').classList.add('active');
+            renderFiltered();
+        };
+
+        // ── Sub-filter ─────────────────────────────────────────────────────────
+        window.setFilter = function(f) {
+            currentFilter = f;
+            document.querySelectorAll('.sb-filter[id^="f-"]').forEach(b => b.classList.remove('active'));
+            document.getElementById('f-' + f).classList.add('active');
+            renderFiltered();
+        };
+
+        // ── Sort + Search + Filter ─────────────────────────────────────────────
+        window.renderFiltered = function() {
+            const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+            const sort = document.getElementById('sortSelect').value;
+            let reqs = [...allReqs];
+
+            // Tab-level filter first
+            if (currentTab === 'requests') {
+                // My Requests tab: targeted pending + my active/closed/declined + cases client released from me
+                reqs = reqs.filter(r =>
+                    (r.status === 'pending' && r.targetLawyerId === userId) ||
+                    (r.lawyerId === userId) ||
+                    (r.status === 'pending' && r.prevLawyerId === userId && r.clientReleased)
+                );
+            } else {
+                // Open Cases tab: all unassigned pending cases (no specific target assigned to another lawyer)
+                // Also show cases where THIS lawyer was previously involved (so they see if client released them)
+                reqs = reqs.filter(r =>
+                    r.status === 'pending' &&
+                    (!r.targetLawyerId || r.targetLawyerId === userId)
+                );
+            }
+
+            // Sub-filter (only meaningful on requests tab)
+            if (currentFilter === 'mine')     reqs = reqs.filter(r => r.status === 'accepted' && r.lawyerId === userId);
+            else if (currentFilter === 'closed')   reqs = reqs.filter(r => r.status === 'closed' && r.lawyerId === userId);
+            else if (currentFilter === 'rejected') reqs = reqs.filter(r => r.status === 'rejected' && r.lawyerId === userId);
+            // 'all' keeps everything from the tab filter
+
+            // Search
+            if (search) reqs = reqs.filter(r =>
+                (r.title || '').toLowerCase().includes(search) ||
+                (r.clientName || '').toLowerCase().includes(search) ||
+                (r.type || '').toLowerCase().includes(search) ||
+                (r.description || '').toLowerCase().includes(search)
+            );
+
+            // Sort
+            reqs.sort((a, b) => {
+                // In requests tab: targeted pending float to top
+                if (currentTab === 'requests') {
+                    const aTarget = (a.status === 'pending' && a.targetLawyerId === userId) ? 1 : 0;
+                    const bTarget = (b.status === 'pending' && b.targetLawyerId === userId) ? 1 : 0;
+                    if (bTarget !== aTarget) return bTarget - aTarget;
+                }
+
+                const ta = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                const tb = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                switch (sort) {
+                    case 'date-asc':   return ta - tb;
+                    case 'alpha-asc':  return (a.title || '').localeCompare(b.title || '');
+                    case 'alpha-desc': return (b.title || '').localeCompare(a.title || '');
+                    case 'type':       return (a.type || '').localeCompare(b.type || '');
+                    case 'client':     return (a.clientName || '').localeCompare(b.clientName || '');
+                    default:           return tb - ta;
+                }
+            });
+
+            renderCards(reqs);
+        };
+
+        // ── Render Cards ───────────────────────────────────────────────────────
+        function renderCards(reqs) {
+            const el = document.getElementById('reqList');
+            if (!reqs.length) {
+                el.innerHTML = '<div class="empty-state">📋<br><br>No cases match this filter.</div>';
+                return;
+            }
+
+            el.innerHTML = reqs.map(r => {
+                const st = r.status || 'pending';
+                const bCls = { accepted: 'badge-accepted', rejected: 'badge-rejected', closed: 'badge-closed', pending: 'badge-pending' }[st] || 'badge-pending';
+                const bLbl = { accepted: 'In Progress', closed: 'Closed', rejected: 'Declined', pending: 'Pending' }[st] || st;
+                const date = r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+                const pulseDot = st === 'accepted' && r.lawyerId === userId ? `<span class="pulse-dot" title="In progress"></span>` : '';
+
+                // Was this lawyer released by the client?
+                const wasReleased = r.clientReleased && r.prevLawyerId === userId;
+
+                // Is this case specifically targeted at this lawyer?
+                const isTargeted = r.targetLawyerId === userId;
+                const targetedBadge = isTargeted ? `<span class="badge" style="background:rgba(184,150,90,.15);color:var(--g);border:1px solid rgba(184,150,90,.3);">⭐ Sent to You</span>` : '';
+                const releasedBadge = wasReleased ? `<span class="badge" style="background:rgba(196,135,58,.1);color:var(--warn);border:1px solid rgba(196,135,58,.25);">⚠ Client Left</span>` : '';
+
+                // Can this lawyer act? Only if pending + (targeted to them OR no target) AND client did NOT release them
+                const canAct = st === 'pending' && !wasReleased && (isTargeted || !r.targetLawyerId);
+
+                let actions = '';
+                if (wasReleased) {
+                    // Client released this lawyer — informational only, no accept/decline
+                    actions = `<span style="font-size:.62rem;color:var(--warn);letter-spacing:1px;text-transform:uppercase;">Client found a new lawyer</span>`;
+                } else if (canAct) {
+                    actions = `
+                        <button class="btn-sm btn-accept" onclick="doAccept('${r.id}')">Accept</button>
+                        <button class="btn-sm btn-reject" onclick="doDecline('${r.id}', '${escAttr(r.title || '')}')">Decline</button>`;
+                } else if (st === 'pending' && r.targetLawyerId && r.targetLawyerId !== userId) {
+                    actions = `<span style="font-size:.62rem;color:var(--di);letter-spacing:1px;text-transform:uppercase;">Awaiting specific lawyer</span>`;
+                } else if (st === 'accepted' && r.lawyerId === userId) {
+                    actions = `
+                        <button class="btn-sm btn-chat"  onclick="openChat('${r.id}')">Chat →</button>
+                        <button class="btn-sm btn-close" onclick="doClose('${r.id}', '${escAttr(r.title || '')}')">Close Case ✓</button>
+                        <button class="btn-sm btn-leave" onclick="doLeave('${r.id}', '${escAttr(r.title || '')}')">Leave Case</button>`;
+                } else if (st === 'accepted' && r.lawyerId !== userId) {
+                    actions = `<span style="font-size:.62rem;color:var(--di);letter-spacing:1px;text-transform:uppercase;">In progress by another</span>`;
+                } else if (st === 'closed') {
+                    const hasFeedback = r.clientFeedbackGiven;
+                    actions = hasFeedback
+                        ? `<span style="font-size:.62rem;color:var(--ok);letter-spacing:1px;text-transform:uppercase;">✓ Closed · Client Rated</span>`
+                        : `<span style="font-size:.62rem;color:var(--mu);letter-spacing:1px;text-transform:uppercase;">✓ Closed · Awaiting Rating</span>`;
+                }
+
+                return `
+                    <div class="req-card s-${st} ru" ${isTargeted ? 'style="border-color:rgba(184,150,90,.22);"' : ''}>
+                        <div class="rc-top">
+                            <div class="rc-title-row">${pulseDot}<div class="rc-title">${r.title || 'Untitled'}</div></div>
+                            <div class="badges">
+                                ${targetedBadge}${releasedBadge}
+                                <span class="badge badge-type">${r.type || 'General'}</span>
+                                <span class="badge ${bCls}">${bLbl}</span>
+                            </div>
+                        </div>
+                        <div class="rc-client">Client: ${r.clientName || 'Unknown'} &nbsp;·&nbsp; <a href="profile.html?uid=${r.clientId}" style="color:var(--gd);font-size:.68rem;text-decoration:none;">View Profile</a></div>
+                        <div class="rc-desc">${r.description || ''}</div>
+                        <div class="rc-footer">
+                            <span class="rc-date">${date}</span>
+                            <div class="rc-actions">${actions}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            requestAnimationFrame(() => {
+                gsap.utils.toArray('.req-card.ru').forEach((el, i) =>
+                    gsap.to(el, { opacity: 1, y: 0, duration: .5, ease: 'power2.out', delay: i * .05 })
+                );
+            });
+        }
+
+        // ── Case Actions ───────────────────────────────────────────────────────
+        window.doAccept = async function(id) {
+            // Check if lawyer already has an active case — one at a time rule
+            const activeCount = allReqs.filter(r => r.status === 'accepted' && r.lawyerId === userId).length;
+            if (activeCount >= 1) {
+                showNotice('You already have an active case. Close or leave it before accepting another.'); return;
+            }
+            try {
+                await updateDoc(doc(db, 'requests', id), {
+                    status: 'accepted', lawyerId: userId, lawyerName,
+                    targetLawyerId: null, targetLawyerName: null,
+                    acceptedAt: serverTimestamp()
+                });
+                showNotice('Case accepted — check "My Active" tab.', 'ok');
+            } catch (e) { showNotice('Error: ' + e.message); }
+        };
+
+        window.doDecline = function(id, title) {
+            showModal('Decline This Case?',
+                `You are about to decline "${title}". It will remain in the pool for other lawyers to accept.`,
+                'Decline', 'btn-modal-danger',
+                async () => {
+                    try {
+                        await updateDoc(doc(db, 'requests', id), { status: 'rejected', lawyerId: userId });
+                        showNotice('Case declined.', 'ok');
+                    } catch (e) { showNotice('Error: ' + e.message); }
+                }
+            );
+        };
+
+        window.doClose = function(id, title) {
+            showModal('Close This Case?',
+                `Mark "${title}" as resolved and closed. The client will be prompted to rate your assistance.`,
+                'Close Case ✓', 'btn-modal-confirm',
+                async () => {
+                    try {
+                        await updateDoc(doc(db, 'requests', id), { status: 'closed', closedAt: serverTimestamp() });
+                        showNotice('Case closed. The client will be notified and can now rate your service.', 'ok');
+                    } catch (e) { showNotice('Error: ' + e.message); }
+                }
+            );
+        };
+
+        window.doLeave = function(id, title) {
+            showModal('Leave This Case?',
+                `Leaving "${title}" will release it back to the open queue. The client and chat history remain intact. The client will be notified.`,
+                'Leave Case', 'btn-modal-danger',
+                async () => {
+                    try {
+                        await updateDoc(doc(db, 'requests', id), {
+                            status: 'pending',
+                            prevLawyerId: userId,
+                            prevLawyerName: lawyerName,
+                            lawyerLeft: true,
+                            lawyerId: null, lawyerName: null,
+                            leftAt: serverTimestamp(),
+                            clientReleased: false,
+                            targetLawyerId: null, targetLawyerName: null
+                        });
+                        showNotice('You have left the case. It is back in the open queue.', 'ok');
+                    } catch (e) { showNotice('Error: ' + e.message); }
+                }
+            );
+        };
+
+        window.openChat = id => window.location.href = `chat.html?requestId=${id}`;
+
+        // ── Auth & Data ────────────────────────────────────────────────────────
+        onAuthStateChanged(auth, async user => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            userId = user.uid;
+            const ud = await getDoc(doc(db, 'users', userId));
+            if (ud.exists() && ud.data().role !== 'lawyer') { window.location.href = 'client-dashboard.html'; return; }
+            lawyerName = ud.exists() ? ud.data().fullName : 'Lawyer';
+            document.getElementById('userName').textContent = lawyerName;
+
+            // No orderBy — sort client-side to avoid composite index requirement
+            const q = query(collection(db, 'requests'));
+            onSnapshot(q, snap => {
+                allReqs = [];
+                snap.forEach(d => allReqs.push({ id: d.id, ...d.data() }));
+                updateSidebarCounts();
+                // Initialize tab state
+                if (!_tabInit) { _tabInit = true; setTab('requests'); }
+                else { renderFiltered(); }
+            });
+        });
+
+        function updateSidebarCounts() {
+            const myActive   = allReqs.filter(r => r.status === 'accepted' && r.lawyerId === userId);
+            const myClosed   = allReqs.filter(r => r.status === 'closed'   && r.lawyerId === userId);
+            const myDeclined = allReqs.filter(r => r.status === 'rejected' && r.lawyerId === userId);
+            const targeted   = allReqs.filter(r => r.status === 'pending'  && r.targetLawyerId === userId);
+            const openCases  = allReqs.filter(r => r.status === 'pending'  && !r.targetLawyerId);
+
+            // My Requests tab badge = targeted pending + my active + closed + declined
+            const requestsTotal = targeted.length + myActive.length + myClosed.length + myDeclined.length;
+
+            document.getElementById('c-targeted').textContent = requestsTotal;
+            document.getElementById('c-open').textContent     = openCases.length;
+            document.getElementById('c-all').textContent      = requestsTotal; // shown in sub-filter
+            document.getElementById('c-mine').textContent     = myActive.length;
+            document.getElementById('c-closed').textContent   = myClosed.length;
+            document.getElementById('c-rejected').textContent = myDeclined.length;
+
+            document.getElementById('acceptedCount').textContent = myActive.length;
+            document.getElementById('closedCount').textContent   = myClosed.length;
+            document.getElementById('pendingCount').textContent  = openCases.length;
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () =>
+            signOut(auth).then(() => window.location.href = 'login.html')
+        );
+
+        // ── Modal ──────────────────────────────────────────────────────────────
+        let _cb = null;
+        function showModal(title, body, confirmLbl, confirmCls, cb) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').textContent = body;
+            const btn = document.getElementById('modalConfirm');
+            btn.textContent = confirmLbl;
+            btn.className = confirmCls;
+            _cb = cb;
+            document.getElementById('confirmModal').classList.add('open');
+        }
+        document.getElementById('modalCancel').addEventListener('click',  () => document.getElementById('confirmModal').classList.remove('open'));
+        document.getElementById('modalConfirm').addEventListener('click', () => {
+            document.getElementById('confirmModal').classList.remove('open');
+            if (_cb) _cb();
+        });
+
+        // ── Notice ─────────────────────────────────────────────────────────────
+        function showNotice(msg, type = 'err') {
+            let n = document.getElementById('__notice');
+            if (!n) {
+                n = document.createElement('div');
+                n.id = '__notice';
+                n.style.cssText = 'position:fixed;top:72px;right:24px;z-index:1500;padding:12px 18px;border-radius:2px;font-size:.82rem;border-left:2px solid;animation:aIn .25s ease;max-width:340px;backdrop-filter:blur(6px);';
+                document.body.appendChild(n);
+            }
+            n.style.background = type === 'ok' ? 'rgba(92,158,114,.12)' : 'rgba(184,80,80,.1)';
+            n.style.borderColor = type === 'ok' ? 'var(--ok)' : 'var(--err)';
+            n.style.color       = type === 'ok' ? 'var(--ok)' : 'var(--err)';
+            n.textContent = (type === 'ok' ? '✓ ' : '⚠ ') + msg;
+            clearTimeout(n._t);
+            n._t = setTimeout(() => { if (n) n.remove(); }, 4000);
+        }
+
+        function escAttr(s) { return s.replace(/['"<>&]/g, c => ({'\'':'&#39;','"':'&quot;','<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+        // ── Cursor ─────────────────────────────────────────────────────────────
+        const cd = document.getElementById('cd'), cr = document.getElementById('cr');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+        window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+        (function loop() {
+            rx += (mx - rx) * .11; ry += (my - ry) * .11;
+            cd.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+            cr.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+            requestAnimationFrame(loop);
+        })();
+        document.querySelectorAll('a,button,input').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hov'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hov'));
+        });
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.utils.toArray('.ru').forEach((el, i) =>
+            gsap.to(el, { opacity: 1, y: 0, duration: .8, ease: 'power3.out', delay: i * .07 })
+        );
+    </script>
+</body>
+</html>
