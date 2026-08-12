@@ -171,8 +171,9 @@ No deployment configuration (`netlify.toml`, `vercel.json`, GitHub Actions, GitH
 
 ##  Team / Contributors
 
+- **Divit** ([@divit-w](https://github.com/divit-w))
 - **Siddharth Narang** ([@sid0037](https://github.com/sid0037))
-- **Ojaswi Rao**
+- **Ojaswi Rao** ([@Ojazzzwi](https://github.com/Ojazzzwi)) 
 
 ## 📄 License & Credits
 
