@@ -100,18 +100,20 @@ People who need legal help — especially those without existing connections to 
 All role checks and permitted actions are re-derived on each page from the Firestore `users` document (not from cached `sessionStorage`), after `onAuthStateChanged` fires.
 
 ## Directory Structure
-lexaid_deployed/
-├── index.html # Redirects immediately to final_index.html
-├── final_index.html # Landing / marketing page
-├── login.html # Sign-in page
-├── register.html # Sign-up page (client or lawyer)
-├── client-dashboard.html # Client's case list, submission form, feedback modal
-├── lawyer-dashboard.html # Lawyer's request queue, open case pool, case actions
-├── find-lawyer.html # 3-step wizard: pick case → match & pick lawyer → confirm
-├── chat.html # Real-time per-case chat + post-close feedback
-├── profile.html # Own/public profile, stats, account settings
-└── README.md
 
+```text
+lexaid_deployed/
+├── index.html              # Redirects immediately to final_index.html
+├── final_index.html        # Landing / marketing page
+├── login.html              # Sign-in page
+├── register.html           # Sign-up page (client or lawyer)
+├── client-dashboard.html   # Client's case list, submission form, feedback modal
+├── lawyer-dashboard.html   # Lawyer's request queue, open case pool, case actions
+├── find-lawyer.html        # 3-step wizard: pick case → match & pick lawyer → confirm
+├── chat.html               # Real-time per-case chat + post-close feedback
+├── profile.html            # Own/public profile, stats, account settings
+└── README.md               # Documentation
+```
 Every page is a single self-contained `.html` file with inline `<style>` and `<script type="module">` blocks — there are no subfolders, no `npm`, and no `package.json` in this repository.
 
 ## Getting Started & Local Setup
