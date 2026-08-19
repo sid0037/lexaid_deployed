@@ -148,10 +148,6 @@ There is no `.env` file — the app connects to an already-provisioned Firebase 
 
 > **Security note:** the current Firebase config (API key, project ID, app ID) is hardcoded in plaintext across all seven pages. Firebase Web API keys aren't secret the way traditional API keys are, but they should still be paired with proper Firestore Security Rules and App Check — neither is present here.
 
-## Deployment
-
-No deployment configuration (`netlify.toml`, `vercel.json`, GitHub Actions, GitHub Pages) is present in this repository, and no homepage URL is set on GitHub. Despite the repository's name, no live deployed URL could be verified from its contents. As a static site, it can be deployed as-is to Firebase Hosting, Netlify, Vercel, or GitHub Pages.
-
 ## Current Limitations
 
 - No backend — all business logic (matching score, one-case-per-lawyer, feedback dedup) runs client-side and can be bypassed unless matching Firestore Security Rules exist server-side (unverifiable from this repo)
