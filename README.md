@@ -175,11 +175,6 @@ No deployment configuration (`netlify.toml`, `vercel.json`, GitHub Actions, GitH
 - **Siddharth Narang** ([@sid0037](https://github.com/sid0037))
 - **Ojaswi Rao** ([@Ojazzzwi](https://github.com/Ojazzzwi)) 
 
-## 📄 License & Credits
-
-No license file is present in this repository, so none is stated here. All rights are reserved by the contributors unless a license is added.
-
-**Built with:** Firebase Authentication, Cloud Firestore, and GSAP — no other third-party frameworks or libraries.
 
 ---
 
